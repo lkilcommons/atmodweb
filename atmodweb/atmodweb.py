@@ -3,7 +3,7 @@ import mpld3 #Render a matplotlib figure as a javascript d3 object
 #Main imports
 import numpy as np
 import sys, pdb, textwrap, datetime,os,time
-
+import socket #to figure out our hostname
 import matplotlib as mpl
 import matplotlib.pyplot as pp
 
@@ -930,6 +930,6 @@ if __name__ == '__main__':
 			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'www')
 		 }
 	 }
-	cherrypy.config.update({'server.socket_host':'128.138.253.51','server.socket_port': 8080})
+	cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})
   
 	cherrypy.quickstart(webapp, '/',conf)

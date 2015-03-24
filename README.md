@@ -1,10 +1,10 @@
 # AtModWeb
 ### _An web application for visually exploring (empirical) atmospheric models_
-This is a project of the University of Colorado Space Environment Data Analysis Group (SEDA), a part of the Colorado Center for Astrodynamics Research (CCAR), and Aerospace Engineering Sciences (AES).
+This is a project of the University of [Colorado Space Environment Data Analysis Group (SEDA)](http://www.ccar.colorado.edu/seda), a part of the Colorado Center for Astrodynamics Research (CCAR), and Aerospace Engineering Sciences (AES).
 
 This tool was inspired by the similar IDL tool developed at National Center for Atmospheric Research's High Altitude Observatory (NCAR HAO) in 2003 as part of the Center for Integrated Space Weather Modeling (CISM) summer school.
 
-_We're currently in early development_
+_We're currently in early development. The application is working, but may have unexpected 'features'_
 
 ### About 
 
@@ -16,33 +16,34 @@ This tool currently allows users to plot variables such as the mass density, tem
 The AtModWeb application is a complete application, from webserver to backend to frontend. After installation, simply running atmodweb.py will get you a webpage hosted from your machine. The webserver and backend use the [CherryPy](http://www.cherrypy.org/) python web framework, and the frontend (a single html and css file) is javascript/jQuery.
 
 ### Installation
-_Don't, yet. A few more major things need to be addressed. If you're interested in the project, please email me._
 
 On linux systems, (tested so far on Ubuntu 14.04, running the Anaconda python distribution), first ensure you have the following dependancies:
-* Gfortran (sudo apt-get install gfortran) 
-* [CherryPy](http://www.riverbankcomputing.com/software/pyqt/download) (sudo apt-get install python-qt4)
+* Gfortran (`sudo apt-get install gfortran` on Ubuntu or use Anaconda) 
+* [CherryPy](http://www.cherrypy.org/) (`pip install cherrypy` or `conda install cherrypy`)
 * Numpy
 * Matplotlib 
-* Basemap
-* MsisPy - python (f2py wrapper) implementation of NRLMSISE00 __Not yet available publically (waiting on blessing from NRL). Email me for access to a private repo__
+* Basemap (`conda install basemap` if using Anaconda, or `pip install basemap` to install from PyPI)
+* MsisPy - python (f2py wrapper) implementation of NRLMSISE00 __Not yet available publically (waiting on blessing from NRL)__
+* HWMPy - python (f2py wrapper) implementation of Horizontal Wind Model 07 __Not yet available publically (waiting on blessing from maintainers)__
 
-**All of these dependancies can be satisfied by using the [Anaconda python distribution](http://continuum.io/downloads)**
- 
+Email me __liam.kilcommons at University of Colorado, Boulder (colorado.edu)__ for access to the model wrappers. Out of academic courtesy, they won't be released publicly until permission is given, though the wrappers themselves are GPLv3.
+
+**Numpy, Matplotlib, and Gfortran dependancies can be satisfied by using the [Anaconda python distribution](http://continuum.io/downloads)**
+
 Then:
 ```{sh}
 git clone https://github.com/lkilcommons/atmodweb.git
 cd atmodweb
-python setup.py install
+python setup.py install 
 ```
 
-### Running the GUI
-Two ways:
-1. From the command line:
-```{sh}
-run_atmodexplorer
-```
-2. From the python interpreter:
-```{python}
-import atmodexplorer
-atmodexplorer.__init__()
-```
+Note that instead of `install` you can put `develop` if you will be altering the source code and don't want to reinstall after each change
+This just symlinks the package to the source, which is handy.
+
+### Running the Server
+1. First, define an environment variable to tell CherryPy what your IP address is.
+From a terminal (OSX or Linux):
+`export CHERRYPY_IP=server.example.edu` 
+Substitute server.example.edu with either your domain name or IP address, or just 'localhost' if you don't want your server 
+accessible from the outside.
+2. Start the server: `python atmodweb.py`
