@@ -875,8 +875,9 @@ class FakeCanvas(object):
 
 class AtModWebObj(object):
 	def __init__(self):
-		self.rootdir = '/home/liamk/mirror/Projects/satdraglab/AtModWeb/atmodweb'
+		self.rootdir = '/home/liamk/mirror/Projects/satdraglab/AtModWeb'
 		self.imgreldir = 'www'
+		self.docreldir = 'docs'
 		self.uihandler = UiHandler(self)
 		self.controlstate = self.uihandler.controlstate
 		self.canvas = FakeCanvas(self,self.controlstate)
@@ -913,7 +914,6 @@ if __name__ == '__main__':
 		 '/': {
 			'tools.sessions.on': True,
 			#'tools.sessions.storage_type':"memcached",
-			'tools.staticdir.root': os.path.abspath(webapp.rootdir),
 			'tools.sessions.locking':'implicit'
 		 },
 		 '/index.html': {
@@ -928,6 +928,14 @@ if __name__ == '__main__':
 		 '/www': {
 			 'tools.staticdir.on': True,
 			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'www')
+		 },
+		 '/docs': {
+			 'tools.staticdir.on': True,
+			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc/build/html')
+		 },
+		 '/favicon.ico': {
+			'tools.staticfile.on':True,
+			'tools.staticfile.filename':os.path.join(os.path.abspath(webapp.rootdir),"www","favicon.ico")
 		 }
 	 }
 	cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})

@@ -47,21 +47,26 @@
 			
 			});
 		*/
-
+		var debug = true
 
 		$(document).ready(function(){
 			$plottype_sel = $("#plottype_select");
 			
-			$xobj = {'sel':$("#xvar_select"),'bounds':$("#xbounds"),'log':$("#xlog")}
-			$yobj = {'sel':$("#yvar_select"),'bounds':$("#ybounds"),'log':$("#ylog")}
-			$zobj = {'sel':$("#zvar_select"),'bounds':$("#zbounds"),'log':$("#zlog")}
-			
+			//Select elements that choose variables
 			$xvar_sel = $("#xvar_select");
 			$yvar_sel = $("#yvar_select");
 			$zvar_sel = $("#zvar_select");
+			
+			//Make an object that associates selectors backwards with their name and associated bounds and log objects
+			$selobj = {}
+			$selobj[$xvar_sel.attr("name")] = {'sel':$("#xvar_select"),'bounds':$("#xbounds"),'log':$("#xlog")}
+			$selobj[$yvar_sel.attr("name")] = {'sel':$("#yvar_select"),'bounds':$("#ybounds"),'log':$("#ylog")}
+			$selobj[$zvar_sel.attr("name")] = {'sel':$("#zvar_select"),'bounds':$("#zbounds"),'log':$("#zlog")}
+			
 			$all_var_sel = $("#xvar_select, #yvar_select, #zvar_select") 
 			$all_var_log = $("#xlog,#ylog,#zlog")
 			$all_var_bounds = $("#xbounds,#ybounds,#zbounds")
+
 			//Set up the functions to change controlstates
 
 			//First we must set up the handler for changes on the plottype select
@@ -69,21 +74,36 @@
 			//Init stuff - set debug options - temporary stuff
 			$("#debugpanel").addClass("debug_on").addClass("initialize_me")
 			$("#dynamicdriverdiv").addClass("initialize_me")
-
+			$driver_reinit = true // do this with a variable instead of a hasClass check
 			//-------------------------------------------------------
 			//Functions which preform repeated tasks
 			//-------------------------------------------------------
+
+			//Make a debugging console log printing thing to put in ajax error
+			$generic_error_func = function (jqxhr,status,error) {
+				if (debug) {console.log("Ajax failed: Server says: "+jqxhr.responseText)}
+			}
+
+			$generic_ajax_alert = function (jqxhr,status,error) { 
+				if (debug == true) {
+					alert("AJAX ERR: "+jqxhr.responseText);
+				} 
+			}
 			//Deal with padding zero values so things look sensible because...javascript
 			$pad = function (str, max) {
  				 str = str.toString();
   				return str.length < max ? $pad("0" + str, max) : str;
 			}
 
+			//Nice litte convenience function for turning an array of promises/deferreds into one via when
+			$.whenall = function(arr) { return $.when.apply($, arr); };
+
 			//Checks if any of the selects have Latitude,Longitude or Altitude,
 			//and hides the associated control if they do (since it's then an independant variable)
 			$hidePosIfNeeded = function () {
-				var def = $.Deferred()
 
+				var def = $.Deferred()
+				if ( debug ) {console.log("Now hiding position if needed.")}
 				var xvar = $xvar_sel.val()
 				var yvar = $yvar_sel.val()
 				var zvar = $zvar_sel.val()
@@ -94,8 +114,8 @@
 				var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) != -1
 				var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  != -1
 				var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) != -1
-				console.log([xvar,yvar,zvar])
-				console.log([lat_in,lon_in,alt_in])
+				if (debug == true) { console.log([xvar,yvar,zvar])}
+				if (debug == true) { console.log([lat_in,lon_in,alt_in])}
 				$("#latinputlbl").hide()
 				$("#latinputlbl").hide()
 
@@ -107,48 +127,83 @@
 				return def.promise()
 			} 
 
+			$.when_all_trigger = function(the_selector,the_event) {
+				the_promises = []
+				the_names = []
+				$(the_selector).each(function (){
+					var the_promise = $(this).triggerHandler(the_event)
+					the_promises.push(the_promise)
+					if (debug == true) { the_names.push($(this).attr("name"))}
+				})
+				if (debug == true) {console.log("Waiting for "+the_names+"to trigger "+the_event)}
+				return $.whenall(the_promises)
+			}
+
 			//set all var selects to their value in the controlstate
-			$init_all_sel = function () {
+			$init_sel = function (which_sel) {
 				//When we're sure we're initialized, set the option to the currently selected variable in the controlstate
 					var allset = $.Deferred()
+					var waiting_for = []
 
 					var xname = $xvar_sel.attr("name")
-					var xvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":xname},type: "GET", 
-						success: function (json) {
-							$xvar_sel.val(json[xname])
-							console.log("Init x select to"+json[xname])
-						}
-					})
-
 					var yname = $yvar_sel.attr("name")
-					var yvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":yname},type: "GET", 
-						success: function (json) {
-							$yvar_sel.val(json[yname])
-							console.log("Init y select to"+json[yname])
-						}
-					})
-
 					var zname = $zvar_sel.attr("name")
-					var zvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":zname},type: "GET", 
-						success: function (json) {
-							$zvar_sel.val(json[zname])
-							console.log("Init z select to"+json[zname])
-						}
-					})
-					$.when([xvar_sel_set,yvar_sel_set,zvar_sel_set]).then(allset.resolve())
+					
+					if (debug) { console.log("Initializing the variable selects: "+which_sel)}
+
+					if (which_sel == xname || which_sel == 'all') {
+						if (debug) { console.log("Initializing the X variable select")}
+					
+						var xvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":xname},type: "GET", 
+							success: function (json) {
+								$xvar_sel.val(json[xname])
+								if (debug == true) { console.log("Init x select to "+json[xname]) }
+							},
+							error: $generic_ajax_alert	
+						})
+						waiting_for.push(xvar_sel_set)
+					}
+
+					if (which_sel == yname || which_sel == 'all') {
+						if (debug) { console.log("Initializing the Y variable select")}
+
+						var yvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":yname},type: "GET", 
+							success: function (json) {
+								$yvar_sel.val(json[yname])
+								if (debug == true) { console.log("Init y select to "+json[yname]) }
+							},
+							error: $generic_ajax_alert
+						})
+						waiting_for.push(yvar_sel_set)
+					}
+
+					if (which_sel == zname || which_sel == 'all') {
+						if (debug) { console.log("Initializing the Z variable select")}
+					
+						var zvar_sel_set = $.ajax({url: "uihandler",data: {"statevar":zname},type: "GET", 
+							success: function (json) {
+								$zvar_sel.val(json[zname])
+								if (debug == true) { console.log("Init z select to "+json[zname]) }
+							},
+							error: $generic_ajax_alert
+						})
+						waiting_for.push(zvar_sel_set)
+					}
+
+					$.whenall(waiting_for).then(allset.resolve)
 					return allset.promise()
 			}
 
 			$format_caption = function (csstring) {
 				//Turns a comma-seperated string into a ul
-				console.log(csstring)
+				if (debug == true) { console.log("Formatting captions") }
 				var values = csstring.split('|') //split on pipes incase there are any commas in data
 				var theul = '<ul ID="captionlist" class="captionlist">' 
 				for (v in values) {
 					theul=theul+'<li class="captionlist">' + values[v] + '</li>'
 				}
 				theul=theul+'</ul>'
-				console.log(theul)
+				//if (debug == true) { console.log("Done") }
      			return theul
 			}
 			
@@ -163,9 +218,9 @@
 				
 				var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
 					success: function(json) {
-						console.log(json)
+						if (debug == true) { console.log(json) }
 						$(e.target).val(json[myname])
-						console.log("In plottype focus, val is", $(e.target).val())
+						if (debug == true) { console.log("In plottype focus, val is", $(e.target).val()) }
 					}
 				})
 
@@ -179,7 +234,11 @@
 			$all_var_sel.on("focus",function( e ) {
 				//Initialize it if it asks for it
 				var myname = $(e.target).attr("name")
+				//get what is selected so we can decide if it's sane given the new options
+				var selection = $(e.target).val()
 				var initializing = $.Deferred()
+
+
 
 				if ( $(e.target).hasClass("initialize_me") ){
 					//Get the list of valid options we can use from the backend (from the session)
@@ -187,7 +246,7 @@
 						success: function( json ) {
 							//Populate the list
 							$("option",e.target).remove(); //All options under this
-							console.log(json)
+							if (debug == true) { console.log(json) }
 							$.each(json[myname+"_options"], function(key, value) {
 								//Set the option value to the key, and the html to the value
 								$(e.target).append($('<option>', { value : key }).text(value))
@@ -199,7 +258,18 @@
 				$(e.target).removeClass("initialize_me")
 				//Set the initializing deferred to resolved once we've 
 
-				$.when(spawning_options).then($init_all_sel()).then(initializing.resolve())
+				//Make sure the current selection is a valid option, otherwise change it and trigger "change"
+				$.when(spawning_options).then(function () {
+						var optionValues = [];
+						$('option',e.target).each(function() {
+						    optionValues.push($(this).val());
+						});
+						if ( !$.inArray(selection,optionValues) ) {
+							if (debug == true) {console.log("Option "+selection+" is not sane, defualting to "+optionValues[0])};
+							$(e.target).val(optionValues[0])
+							$(e.target).triggerHandler("change")
+						}
+					}).then($init_sel(myname)).then($selobj[myname]['bounds'].triggerHandler("focus")).done(initializing.resolve)
 					
 				} else {
 					initializing.resolve()
@@ -212,13 +282,13 @@
 			//--X, Y, and Z Limit Inputs
 			$all_var_bounds.on("focus",function(e) {
 				var myname = $(e.target).attr("name")
-				$.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
+				var the_ajax = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
 					success: function(json){
 						var newbounds = json[myname]
 						$(e.target).val(newbounds[0].toFixed(2)+","+newbounds[1].toFixed(2))
 					}
 				});
-
+				return the_ajax
 				//e.preventDefault()
 			});
 
@@ -229,14 +299,14 @@
 				
 				var dtpadding = {"year":4,"month":2,"day":2,"hour":2,"minute":2}
 
-				$.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname},type: "GET",dataType:"json",
+				var the_ajax = $.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname},type: "GET",dataType:"json",
 					success: function(json) {
-						console.log(json)
+						if (debug == true) { console.log(json) }
 
 						$(e.target).val($pad(json["datetime"],dtpadding[myname]))
 					}
 				})
-
+				return the_ajax
 				//e.preventDefault()
 			});
 
@@ -245,13 +315,13 @@
 				var myname = $(e.target).attr("name")
 				//Use the name attr of the input to decide what field of the datetime object we will get
 				
-				$.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
+				var the_ajax = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
 					success: function(json) {
-						console.log(json)
+						if (debug == true) { console.log(json) }
 						$(e.target).val(String(json[myname]))
 					}
 				})
-
+				return the_ajax
 				//e.preventDefault()
 			});
 
@@ -271,7 +341,7 @@
 				var defrd = $.Deferred() //This is so we can check if the callback finished
 				//Tell the backend that we have a change to the plotvar
 				//{"statevar":"plottype","newval":selection}
-				console.log("In plottype change, val is", selection)
+				if (debug == true) { console.log("In plottype change, val is", selection) }
 
 				var plottype_changed = $.ajax({url: "/uihandler",data: {"statevar":"plottype","newval":selection},type: "PUT"})
 
@@ -329,12 +399,9 @@
 				}
 				
 				
-				$.when(plottype_changed).then(function (data) {
-					console.log("Triggering focus from plottype change")
-					var xvar_done = $xvar_sel.triggerHandler("focus")
-					var yvar_done = $yvar_sel.triggerHandler("focus")
-					var zvar_done = $zvar_sel.triggerHandler("focus")
-					$.when(xvar_done,yvar_done,zvar_done).then(defrd.resolve());
+				$.when(plottype_changed).done(function (data) {
+					if (debug == true) { console.log("Triggering focus from plottype change") }
+					$.when_all_trigger($all_var_sel,"focus").then(defrd.resolve);
 				})
 			
 				return defrd.promise() //Return a Deferred so we can see if the callback finished
@@ -366,11 +433,11 @@
 				var myname = $(e.target).attr("name")
 				var selection = $(e.target).val()
 				var statevar = String(myname.charAt(0)+"multi")
-				
+				var change_done = $.Deferred()
 
 				//Handles formating the data for PUT ajax calls
 				if ( $.isArray(selection) && selection.length > 1) {
-					console.log(statevar)
+					if (debug == true) { console.log(statevar) }
 					var multi_updated = $.ajax({url: "/uihandler",data: {"statevar":statevar,"newval":true},type: "PUT"})
 				} else if ( $.isArray(selection) && selection.length == 1 ) {
 					selection = selection[0]
@@ -383,19 +450,21 @@
 				
 				//Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
 				multi_updated.done( function(data) {
-					console.log(multi_updated.state())
-					var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT",
-							success: function (thedata) {
-								//Make sure the bounds are up to date
-								console.log("Triggering all bounds to focus after variable change")
-								$all_var_bounds.trigger("focus")
-								$hidePosIfNeeded()
-								$(".positioninput").trigger("focus")
-							}
-						})
-					});
+					var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT"})
+					//Make sure the bounds are up to date
+					
+					$.when(ajax_done
+					).then($selobj[myname]['sel'].triggerHandler("focus")
+					).then($selobj[myname]['bounds'].triggerHandler("focus")
+					).then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
+						if (debug == true) { console.log("Done processing triggers after variable change: "+myname) }
+						change_done.resolve()
+						
+					})
+					
+				});
 
-
+				return change_done.promise()
 				
 			});
 
@@ -403,7 +472,7 @@
 			$all_var_log.on("change",function(e) {
 				var myname = $(e.target).attr("name")
 				var newval = $(e.target).prop("checked")
-				$.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
+				return $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
 				
 			});
 
@@ -417,7 +486,7 @@
 					alert("Bounds inputs must have form lowerbound,upperbound")
 				} else {
 					//Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
-					$.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT"})
+					return $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT"})
 				}
 			});
 
@@ -428,7 +497,8 @@
 				var newval = $(e.target).val()
 				//{"statevar":"datetime","newval":{myname : parseInt(newval)}}
 				var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname,"newval":parseInt(newval)},type: "PUT"})
-				$.when(ajax_done).then($("#plotbutton").trigger("click"))
+				var plotting = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
+				return plotting
 			});
 
 			//--Position Change Inputs
@@ -439,7 +509,8 @@
 				//{"statevar":"datetime","newval":{myname : parseInt(newval)}}
 				var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
 				var autoscale_done = $.ajax({url: "/uihandler",data: {"posttype":"autoscale"},type: "POST"})
-				$.when([ajax_done,autoscale_done]).then($("#plotbutton").trigger("click"))
+				var plotting = $.when(ajax_done,autoscale_done).then($("#plotbutton").triggerHandler("click"))
+				return plotting
 			});
 
 			
@@ -448,26 +519,17 @@
 				//Tell the backend to work through any UI changes and replot
 				var plotting_done = $.Deferred()
 
+				//Put in the loading sign
 				$("#plotimg").attr("src","/www/loading.gif")
 
 				var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshnow"},type: "POST",
-					error: function( err ) {
-						alert("Failed to refresh plot!")
+					error: function(jqxhr,status,error) {
+						alert("Failed to refresh plot! Server said: "+jqxhr.responseText)
 					}
 
 				})
-				//Tell the backend to save the plot and return the url to the image
-				refreshing.done(function (thedata) { 
-					$.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
-					success: function( json ) {
-							$("#plotimg").attr("src",json["src"]);    
-							$("#plotimg_cap").html($format_caption(json["cap"]))
-							$("#dynamicdriverdiv").addClass('initialize_me')
-						}
-					})
-					//Make sure position and date are up to date
-					$(".dateinput,.positioninput").trigger("focus")	
-				})
+
+				
 				//Update the plot history
 				$.when(refreshing).then(function (thedata) {
 	 				var loading_history = $.ajax({url: "/uihandler", data: {"statevar":"recentplots"},type: "GET",
@@ -480,23 +542,48 @@
 	 						$recent_captions = json["recentcaptions"]
 	 					}
 	 				})
-	 			}).then(function (thedata) {
-	 				$("#dynamicdriverdiv").addClass("initialize_me")
-				 	return $("#dynamicdriverdiv").triggerHandler("click")
-	 			}).then(plotting_done.resolve())
+	 				return $.when(loading_history_caps,loading_history)
+	 			}).then(function (thedata) { 
+					//Tell the backend to save the plot and return the url to the image
+			
+					var done_replotting = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
+						success: function( json ) {
+							$("#plotimg").attr("src",json["src"]);    
+							$("#plotimg_cap").html($format_caption(json["cap"]))
+							$("#dynamicdriverdiv").addClass('initialize_me')
+							$driver_reinit = true
+						},
+						error : $generic_ajax_alert
+						
+					})
+					//Make sure position and date are up to date
+					return done_replotting
+				}).then(function (f3) {
+					if (debug) {console.log("Now triggering dynamicdriverdiv click handler")}
+					$("#dynamicdriverdiv").triggerHandler("click")
+				}).then($.when_all_trigger(".dateinput,.positioninput","foucs")).done(function (f) {
+					if (debug == true) { console.log("Done with plotting, resolving")}
+					plotting_done.resolve()
+				})
+				
+	 			return plotting_done.promise()
 			});
 
 			//Drivers inputs that are Ajaxed in
 			$("#dynamicdriverdiv").on("click", function (e) {
 				var all_done = $.Deferred()
-				if ( $("#dynamicdriverdiv").hasClass('initialize_me') ) {
+				//I don't know why this is failing!
+				if (debug == true) {console.log("Dynamic drivers click callback. Has init class:"+$("#dynamicdriverdiv").hasClass('initialize_me'))};
+				if ( $("#dynamicdriverdiv").hasClass('initialize_me') || $driver_reinit == true) {
 					//make sure the controlstate is up to date. Strictly this isn't nessecary
 					//var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshmodeloptions"},type: "POST"})
 					$(".dynamicinput").remove()
 					var getting_drivers = $.ajax({url: "/uihandler",data: {"statevar":"drivers"},type:"GET",
 						success: function(json){
+							if (debug == true) {console.log("Now building dynamic drivers list")};
 							$.each(json["drivers"], function(key,value) {
-								var newinput = $("<input type='text' class='dynamicinput' size='8'>").val(value).attr("name",key).attr("ID",'dynamicinput'+key)
+								
+								var newinput = $("<input type='text' class='dynamicinput' size='15'>").val(value).attr("name",key).attr("ID",'dynamicinput'+key)
 								var newlabel = $("<label class='dynamicinput'>").text(key+":")
 								$("#dynamicdriverdiv").append(newlabel.append(newinput)) 
 								$("#dynamicdriverdiv").append($("<br class='dynamicinput'>"))
@@ -504,14 +591,15 @@
 								newinput.on("change",function(e){
 									var myname = $(e.target).attr("name")
 									var textval = $(e.target).val()
-									console.log("Dynamic Driver Change")
+									if (debug == true) { console.log("Dynamic Driver Change") }
 									var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"drivers","subfield":myname,"newval":textval},type: "PUT"})
-									return ajax_done
+									var plotting_done = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
+									return plotting_done
 								});
 								newinput.on("focus",function(e){
 									var myname = $(e.target).attr("name")
 									var textval = $(e.target).val()
-									console.log("Dynamic Driver Focus")
+									if (debug == true) { console.log("Dynamic Driver Focus") }
 									var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"drivers","subfield":myname},type: "GET",
 										success: function (json) {
 											$(e.target).val(String(json["drivers"]))
@@ -523,58 +611,67 @@
 						} //success function
 					});
 					$("#dynamicdriverdiv").removeClass("initialize_me")
-					$.when(getting_drivers).then(all_done.resolve())
+					$driver_reinit = false
+					$.when(getting_drivers).done(all_done.resolve)
 				} else {
 					all_done.resolve()
 				}
-				return all_done
+				return all_done.promise()
 			})
 
 			//Put a loading image in the plot
 			$("#capdiv").slideUp()
 			$("#plotimg").attr("src","/www/loading.gif")
-
-
+									
 			//Signal to the uihandler that we're ready to sync up the contolstate
 			//this propagates any changes that happened to the ControlState dict
 			//on the backend to the CherryPy session variable 
 			var synching = $.ajax({url: "/uihandler", data: {"posttype":"uiready"},type: "POST"})
 			//synching is a 'Promise'...a read-only Deferred
 
+
+
 			//--Set initial plot
 			synching.done(function (thedata) {
 				var plotting_done = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
 					success: function( json ) {
 						
-						$("#plotimg").attr("src",json["src"]);    
-						$("#plotimg_cap").html($format_caption(json["cap"]))
+						
 						//These must be done in the right order, so they pass back a 
-						//Deferred so they can be used with when and then
+						//promises so they can be used with when and then
 						//They must be done in order because they tell the x,y,and z
 						//selectors to populate and set up the proper visibility for those 
 						//elements based on the plottype that is default in the controlstate
 						
-						$.when($plottype_sel.triggerHandler("focus")).then(
-							function () {
-								console.log("Done with focus")
-								$.when($plottype_sel.triggerHandler("change")).then(
-								function (data) {
-									console.log("Done with change")
-									var xdone = $xvar_sel.triggerHandler("focus")
-									var ydone = $yvar_sel.triggerHandler("focus")
-									var zdone = $zvar_sel.triggerHandler("focus")
-									$.when(xdone,ydone,zdone).then(function () {
-										$.when($init_all_sel()).always($hidePosIfNeeded())
-									})
-									$('.positioninput,.dateinput').trigger("focus")
-								}).then($all_var_bounds.trigger("focus"))
-							});
+						$.when($plottype_sel.triggerHandler("focus")
+							).then(function (thedat) {
+								if (debug == true) { console.log("Done with plottype focus") }
+								return $.when($plottype_sel.triggerHandler("change"))
+							}).then(function (data) {
+								if (debug == true) { console.log("Done with plottype change") }
+								var xdone = $xvar_sel.triggerHandler("focus")
+								var ydone = $yvar_sel.triggerHandler("focus")
+								var zdone = $zvar_sel.triggerHandler("focus")
+								return $.when(
+									xdone,ydone,zdone).then(
+									$hidePosIfNeeded).then(
+									$.when_all_trigger('.positioninput,.dateinput',"focus")
+									);
+							}).then(function (thedata) {
+									if (debug == true) {console.log("Now trigger bounds focus")}
+									//trigger all bounds to refresh
+									return $.when_all_trigger($all_var_bounds,"focus")
+							}).then($("#dynamicdriverdiv").triggerHandler("click")).done(
+								function (stuff) {
+								//Very last thing we do is take away the loading gif
+								//and update the plot
+								$("#plotimg").attr("src",json["src"]);    
+								$("#plotimg_cap").html($format_caption(json["cap"]))
+							})
+					}
 						
-						$("#dynamicdriverdiv").addClass("initialize_me")
-						$("#dynamicdriverdiv").trigger("click")
-
-						}
-					})
+						
+					});
 			});
 
 
@@ -598,7 +695,7 @@
 
  			$("#previous_button,#next_button").on("click",function(e) {
  				var caller_id = $(e.target).attr("ID")
- 				console.log(caller_id)
+ 				if (debug == true) { console.log(caller_id) }
 
 				if ( caller_id == "previous_button" ) {
 					if ( $recent_index < $recent_files.length ) {
@@ -663,7 +760,10 @@
 									)
 								).addClass('debug_table')
 							});
+							//Make sure all of that class adding was processed
+							$('.debug_table_el')
 						}
+
 					});
 				} else {
 					$("#debug_table,#panic").hide()
@@ -741,7 +841,7 @@
 					<button ID="plotbutton">replot!</button>
 
 					<div ID="xvar_div" class="panel xvar">
-						<select ID="xvar_select" name="xvar" multiple="true" class="var xvar">
+						<select ID="xvar_select" name="xvar" multiple="true" class="var xvar intitialize_me">
 								<option value="null">Choose a X variable...</option>
 						</select>
 
@@ -756,7 +856,7 @@
 					
 					<div ID="yvar_div" class="panel yvar">
 
-						<select ID="yvar_select" name="yvar" multiple="true" class="var yvar">
+						<select ID="yvar_select" name="yvar" multiple="true" class="var yvar intitialize_me">
 							<option value="null">Choose a Y variable...</option>
 						</select>
 						
@@ -771,7 +871,7 @@
 					
 					<div ID="zvar_div" class="panel zvar">
 
-						<select ID="zvar_select" name="zvar" multiple="true" class="var zvar">
+						<select ID="zvar_select" name="zvar" multiple="true" class="var zvar intitialize_me">
 							<option value="null">Choose a color variable...</option>
 						</select>
 
