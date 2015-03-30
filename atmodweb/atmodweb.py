@@ -14,6 +14,9 @@ from collections import OrderedDict
 import logging
 logging.basicConfig(level=logging.INFO)
 
+from cherrypy.lib import auth_digest
+
+
 #Import the model running code
 from atmodexplorer.atmodbackend import ModelRunner, MsisRun, ModelRun, PlotDataHandler
 
@@ -909,6 +912,9 @@ class AtModWebObj(object):
 
 if __name__ == '__main__':
 	
+
+	
+
 	webapp = AtModWebObj()
 	conf = {
 		 '/': {
@@ -938,6 +944,15 @@ if __name__ == '__main__':
 			'tools.staticfile.filename':os.path.join(os.path.abspath(webapp.rootdir),"www","favicon.ico")
 		 }
 	 }
+
+	#Optional password protection by setting some environent variables
+	if 'CHERRYPY_USER' in os.environ and 'CHERRYPY_PWD' in os.environ:
+		USERS = {os.environ['CHERRYPY_USER']:os.environ['CHERRYPY_PWD']}
+		conf['/']['tools.auth_digest.on']=True
+		conf['/']['tools.auth_digest.realm']='localhost'
+		conf['/']['tools.auth_digest.get_ha1']=auth_digest.get_ha1_dict_plain(USERS)
+		conf['/']['tools.auth_digest.key']='b565d27146791cfc'
+	    
 	cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})
   
 	cherrypy.quickstart(webapp, '/',conf)
