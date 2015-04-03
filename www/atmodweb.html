@@ -238,8 +238,6 @@
 				var selection = $(e.target).val()
 				var initializing = $.Deferred()
 
-
-
 				if ( $(e.target).hasClass("initialize_me") ){
 					//Get the list of valid options we can use from the backend (from the session)
 					var spawning_options = $.ajax({url: "/uihandler",data: {"statevar":myname+"_options"},type: "GET",
@@ -272,7 +270,7 @@
 					}).then($init_sel(myname)).then($selobj[myname]['bounds'].triggerHandler("focus")).done(initializing.resolve)
 					
 				} else {
-					initializing.resolve()
+					$.when($selobj[myname]['bounds'].triggerHandler("focus")).then(initializing.resolve())
 				}
 				
 				return initializing.promise()

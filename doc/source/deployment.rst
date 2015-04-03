@@ -27,6 +27,7 @@ First make sure the droplet is up to date, and install security software to prev
 	sudo apt-get install git
 	sudo apt-get install gfortran
 	
+.. note:: If you get a strange error on starting atmodweb where python complains about not being able to find libSM.so.6, don't dispair. It is a `known anaconda issue` <https://github.com/ContinuumIO/anaconda-issues/issues/244>_ .The fix is to sudo apt-get install python-qt4.
 
 The we make a non-root user so that we're not running AtModWeb as root (bad security practice).
 
@@ -105,4 +106,11 @@ and if you want to password protect your server, an approriately strong password
 	#if you want to password protect your site, add these too
 	export CHERRYPY_USER='my_user'
 	export CHERRYPY_PWD='my_password'
+
+.. note:: If you want to run your instance using the normal web port (80), you will need to issue the following firewall rule. You cannot bind the cherrypy server directly to 80 (unless you are running as root, which is BAD SECURITY), so you will need to redirect. 
+
+How to run on port 80:
+
+.. code-block:: bash
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 
