@@ -1,10 +1,11 @@
 import cherrypy #Python web server
-import mpld3 #Render a matplotlib figure as a javascript d3 object
+#import mpld3 #Render a matplotlib figure as a javascript d3 object
 #Main imports
 import numpy as np
 import sys, pdb, textwrap, datetime,os,time
 import socket #to figure out our hostname
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as pp
 
 from mpl_toolkits.basemap import Basemap
@@ -878,7 +879,7 @@ class FakeCanvas(object):
 
 class AtModWebObj(object):
 	def __init__(self):
-		self.rootdir = '/home/liamk/mirror/Projects/satdraglab/AtModWeb'
+		self.rootdir = '/home/liamk/atmodweb/'
 		self.imgreldir = 'www'
 		self.docreldir = 'docs'
 		self.uihandler = UiHandler(self)
@@ -922,7 +923,7 @@ if __name__ == '__main__':
 			#'tools.sessions.storage_type':"memcached",
 			'tools.sessions.locking':'implicit'
 		 },
-		 '/index.html': {
+		 '/index': {
 			'tools.staticfile.on':True,
 			'tools.staticfile.filename': os.path.join(os.path.abspath(webapp.rootdir),'www','atmodweb.html')
 		 },
