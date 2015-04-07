@@ -66,6 +66,8 @@
 			$all_var_sel = $("#xvar_select, #yvar_select, #zvar_select") 
 			$all_var_log = $("#xlog,#ylog,#zlog")
 			$all_var_bounds = $("#xbounds,#ybounds,#zbounds")
+			//Everything
+			$all_controls = $("#xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
 
 			//Set up the functions to change controlstates
 
@@ -84,18 +86,31 @@
 				if (debug) {console.log("Ajax failed: Server says: "+jqxhr.responseText)}
 			}
 
+			$generic_put_err = function (jqxhr,status,error) {
+				if (debug == true) {
+					alert("Failed to PUT value")
+				}
+			}
+
+			$generic_put_err = function (jqxhr,status,error) {
+				if (debug == true) {
+					alert("Failed to GET value")
+				}
+			}
+
 			$generic_ajax_alert = function (jqxhr,status,error) { 
 				if (debug == true) {
 					alert("AJAX ERR: "+jqxhr.responseText);
 				} 
 			}
+
 			//Deal with padding zero values so things look sensible because...javascript
 			$pad = function (str, max) {
  				 str = str.toString();
   				return str.length < max ? $pad("0" + str, max) : str;
 			}
 
-			//Nice litte convenience function for turning an array of promises/deferreds into one via when
+			//Nice litte convenience function for turning an array of promises/deferreds into one via $.when
 			$.whenall = function(arr) { return $.when.apply($, arr); };
 
 			//Checks if any of the selects have Latitude,Longitude or Altitude,
@@ -484,7 +499,8 @@
 					alert("Bounds inputs must have form lowerbound,upperbound")
 				} else {
 					//Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
-					return $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT"})
+					putting_bounds = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT"})
+					return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
 				}
 			});
 
@@ -522,26 +538,20 @@
 
 				var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshnow"},type: "POST",
 					error: function(jqxhr,status,error) {
-						alert("Failed to refresh plot! Server said: "+jqxhr.responseText)
+						if ( debug == true ) console.log(jqxhr)
+						var getting_error = $.ajax({url: "/uihandler", data: {"statevar":"lasterror"},type: "GET",
+							success: function (json) {
+								alert("Oops, I couldn't refresh your plot. Please check that your selections make sense and press the plot button again. This message from the server may give you an idea what went wrong: "+String(json['lasterror']))
+							
+							}
+						})
+						return getting_error
+						
 					}
 
 				})
 
-				
-				//Update the plot history
-				$.when(refreshing).then(function (thedata) {
-	 				var loading_history = $.ajax({url: "/uihandler", data: {"statevar":"recentplots"},type: "GET",
-						success: function (json) {
-	 						$recent_files = json["recentplots"]
-	 					}
-	 				})
-	 				var loading_history_caps = $.ajax({url: "/uihandler", data: {"statevar":"recentcaptions"},type: "GET",
-	 					success: function (json) {
-	 						$recent_captions = json["recentcaptions"]
-	 					}
-	 				})
-	 				return $.when(loading_history_caps,loading_history)
-	 			}).then(function (thedata) { 
+				$.when(refreshing).then(function (thedata) { 
 					//Tell the backend to save the plot and return the url to the image
 			
 					var done_replotting = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
@@ -551,21 +561,25 @@
 							$("#dynamicdriverdiv").addClass('initialize_me')
 							$driver_reinit = true
 						},
-						error : $generic_ajax_alert
+						error : function ( jqxhr ) {
+							alert("Oops, I was unable to save your plot. Please change your selections and try again.")
+						}
 						
 					})
 					//Make sure position and date are up to date
 					return done_replotting
 				}).then(function (f3) {
 					if (debug) {console.log("Now triggering dynamicdriverdiv click handler")}
-					$("#dynamicdriverdiv").triggerHandler("click")
-				}).then($.when_all_trigger(".dateinput,.positioninput","foucs")).done(function (f) {
+					return $("#dynamicdriverdiv").triggerHandler("click")
+				}).then($.when_all_trigger($all_controls,"focus")).done(function (f) {
 					if (debug == true) { console.log("Done with plotting, resolving")}
 					plotting_done.resolve()
 				})
 				
 	 			return plotting_done.promise()
 			});
+
+
 
 			//Drivers inputs that are Ajaxed in
 			$("#dynamicdriverdiv").on("click", function (e) {
@@ -673,50 +687,74 @@
 			});
 
 
-
-			//--This is a hack. It forces the session to restart.
-			//$.ajax({url: "/uihandler", data: {"statevar":"debugreinit"},type: "POST"})
  			
 			//Handle clicking the previous or next button
-			$recent_index = 1
-			//Init the recent_files and recent_captions globals here
-			var loading_history = $.ajax({url: "/uihandler", data: {"statevar":"recentplots"},type: "GET",
+
+
+			$("#previous_button").on("click",function(e) {
+				var prevdone = $.Deferred()
+				//Put in the loading sign
+				$("#plotimg").attr("src","/www/loading.gif")
+
+				var getting_prev = $.ajax({url: "/uihandler", data: {"posttype":"prevplot"},type: "POST",
 					success: function (json) {
- 						$recent_files = json["recentplots"]
- 					}
- 				})
-			var loading_history_caps = $.ajax({url: "/uihandler", data: {"statevar":"recentcaptions"},type: "GET",
-				success: function (json) {
-					$recent_captions = json["recentcaptions"]
-				}
+						$("#plotimg").attr("src",json["plot"]);
+						$("#plotimg_cap").html($format_caption(json["caption"]));
+						$("#caplabel").text('Plot #'+json["ind"]+'/'+json["maxind"])
+						$("#dynamicdriverdiv").addClass('initialize_me')
+						$driver_reinit = true
+					},
+					error: function (jqxhr) {
+						alert("Sorry, I couldn't retrieve previous plot")
+					}
+
+				});
+				
+				$.when(getting_prev).then(function () {
+					if (debug) {console.log("Now triggering dynamicdriverdiv click handler from prev plot callback")}
+					return $("#dynamicdriverdiv").triggerHandler("click")
+				}).then($.when_all_trigger($all_controls,"focus")).then($init_sel('all')).done(function (f) {
+					if (debug == true) { console.log("Done with previous, resolving")}
+					prevdone.resolve()
+					return prevdone.promise()
+				})
+
+				return prevdone.promise()
 			})
 
- 			$("#previous_button,#next_button").on("click",function(e) {
- 				var caller_id = $(e.target).attr("ID")
- 				if (debug == true) { console.log(caller_id) }
+			$("#next_button").on("click",function(e) {
+				//Put in the loading sign
+				var nextdone = $.Deferred()
+				$("#plotimg").attr("src","/www/loading.gif")
 
-				if ( caller_id == "previous_button" ) {
-					if ( $recent_index < $recent_files.length ) {
-						$recent_index = $recent_index + 1
-						$("#plotimg").attr("src",$recent_files[$recent_files.length-$recent_index]);
-						$("#plotimg_cap").html($format_caption($recent_captions[$recent_captions.length-$recent_index]));
-						$("#caplabel").text('Plot #'+String($recent_captions.length-$recent_index+1)+'/'+String($recent_captions.length))
-						$('#capdiv').slideDown()
-					} 
-				}
-				else if ( caller_id == "next_button" ) {
-					if ( $recent_index > 1 ) {
-						$recent_index = $recent_index - 1
-						//Change the plot image
-						$("#plotimg").attr("src",$recent_files[$recent_files.length-$recent_index]);
-						$("#plotimg_cap").html($format_caption($recent_captions[$recent_captions.length-$recent_index]));
-						$("#caplabel").text('Plot #'+String($recent_captions.length-$recent_index+1)+'/'+String($recent_captions.length))
-						$('#capdiv').slideDown()
-					} 
-				}
-				
-				
+				var getting_next = $.ajax({url: "/uihandler", data: {"posttype":"nextplot"},type: "POST",
+					success: function (json) {
+						$("#plotimg").attr("src",json["plot"]);
+						$("#plotimg_cap").html($format_caption(json["caption"]));
+						$("#caplabel").text('Plot #'+json["ind"]+'/'+json["maxind"])
+						$("#dynamicdriverdiv").addClass('initialize_me')
+						$driver_reinit = true
+					},
+
+					error: function (jqxhr) {
+						alert("Sorry, I couldn't retrieve next plot")
+					}
+
+				});
+
+				$.when(getting_next).then(function () {
+					if (debug) {console.log("Now triggering dynamicdriverdiv click handler from next plot callback")}
+					return $("#dynamicdriverdiv").triggerHandler("click")
+				}).then($.when_all_trigger($all_controls,"focus")).then($init_sel('all')).done(function (f) {
+					if (debug == true) { console.log("Done with next, resolving")}
+					nextdone.resolve()
+					return nextdone.promise()
+				})
+
+				return nextdone.promise()
 			})
+				
+			
 			//Some cute little animation of the plot details
 			$("#plotimg").on('click', function() {
     			$('#capdiv').slideToggle()
@@ -889,12 +927,11 @@
 					<div ID="plotholder" class="plot_container">
 						<button ID="previous_button"> Previous </button>
 						<button ID="next_button"> Next </button>
-						
+						<strong ID="caplabel">Plot Details Available (click plot to hide/show)</strong>
 						<figure ID="plotfig">
 							<img ID="plotimg" alt="My MSIS plot" src="" width:"750px" title="Click to show/hide plot details"></img>
 						</figure>
 						<div ID="capdiv" class="panel">
-							<strong ID="caplabel">Plot Details (click to hide/show)</strong>
 							<figcaption ID="plotimg_cap" class="plot_cap"></figcaption>
 						</div>
 						
