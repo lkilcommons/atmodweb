@@ -13,9 +13,10 @@ from matplotlib import ticker
 from matplotlib.colors import LogNorm, Normalize
 from collections import OrderedDict
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
 from cherrypy.lib import auth_digest
-
+import copy #Dicts must be deepcopied.
 
 #Import the model running code
 from atmodexplorer.atmodbackend import ModelRunner, MsisRun, ModelRun, PlotDataHandler
@@ -58,7 +59,7 @@ class ControlState(dict):
 	"""
 	def __init__(self, *args):
 		self._sync = False #Add a flag to determine whether or not we sync with the session on set/get
-		self.log = logging.getLogger(__name__)
+		self.log = logging.getLogger(self.__class__.__name__)
 		
 		dict.__init__(self, args)
 		
@@ -151,7 +152,15 @@ class ControlState(dict):
 		"""
 		newdict = dict()
 		for key in self:
-			newdict[key] = dict.__getitem__(self,key)
+			item = dict.__getitem__(self,key)
+			if hasattr(item,'__deepcopy__'): #Make sure that we're not getting references
+				newitem = item.deepcopy()
+			elif hasattr(item,'__copy__') or isinstance(item,dict):
+				newitem = copy.deepcopy(item)
+			else:
+				newitem = item
+			newdict[key] = newitem 
+
 		return newdict	
 
 class ControlStateManager(object):
@@ -163,7 +172,7 @@ class ControlStateManager(object):
 	index of ModelRunner.runs should be the model run created by the n-th index of ControlStateManager.states
 	"""
 	def __init__(self):
-		self.log = logging.getLogger(__name__)
+		self.log = logging.getLogger(self.__class__.__name__)
 		
 		self.states = [] #List of controlstates
 		self.default_controlstate = {'model_index':-1,'datetime':{'year':2000,'month':6,'day':21,'hour':12,'minute':0,'second':0},\
@@ -191,6 +200,7 @@ class ControlStateManager(object):
 
 		#Add our first controlstate
 		self.set_default_state()
+
 
 	@property
 	def lastind(self):
@@ -222,11 +232,16 @@ class ControlStateManager(object):
 		self._lastind = -1 # Fix it so that the previous and next are always referenced to the plot that is displaying (i.e
 			#If we've gotten here then we've just plotted something, and this controlstate is getting appended to self.states,
 			#so the previous plot should be at -2, one before this one)
-
+		
 		#Add to the history on call
 
 		self.n_total_states += 1
 		self.log.debug("Now adding controlstate %d to history." %(self.n_total_states))
+		self.log.debug("--Drivers dictionary is %s" %(str(self.controlstate['drivers'])))
+		if len(self.states) > 0:
+			changeddict = self.changed()
+			for key in changeddict:
+				self.log.debug("--Key %s changed from self.states[-1]\n %s \nto current\n %s" % (key,str(self.states[-1][key]),str(self.controlstate[key])))
 		self.states.append(self.controlstate.copyasdict())
 
 		if len(self.states)>self.n_max_states:
@@ -265,7 +280,7 @@ class ControlStateManager(object):
 		"""
 		Is the current value assigned to key changed since last updatelast call?
 		"""
-		if key is None:
+		if key is None and len(self.states)>=1:
 			ch = dict()
 			for key in self.states[-1]:
 				if self.changed(key):
@@ -308,8 +323,11 @@ class ControlStateManager(object):
 		"""Copies all values from controlstate at states[ind] to current controlstate"""
 		self.log.debug("Restoring controlstate from history at index[%d]" % (ind))
 		for key in self.states[ind]:
+			if self.controlstate[key] != self.states[ind][key]:
+				self.log.debug("--On restore: differing values:\n--current controlstate %s value:\n ---%s \n with self.states[%s][%s], value:\n ---%s" % (key,
+				str(self.controlstate[key]),str(ind),str(key),str(self.controlstate[key])))
 			self.controlstate[key]=self.states[ind][key]
-
+				
 	def restore_last_good(self):
 		"""
 		Tries to find a model run with model_run_success = True and then restores those settings
@@ -358,7 +376,7 @@ class Synchronizer(object):
 	def __init__(self,canvas,uihand):
 		#mr is the ModelRunner instance
 		#csm is the ControlStateManager instance 
-		self.log = logging.getLogger(__name__)
+		self.log = logging.getLogger(self.__class__.__name__)
 		
 		self.mr = None #Placeholder for ModelRunner instance
 		self.canvas = canvas #The FakeCanvas instance we will plot on
@@ -420,6 +438,9 @@ class Synchronizer(object):
 			#Do Nothing
 			pass
 		else:
+			old_driver_val = str(self.mr.nextrun.drivers[subfield]) if subfield in self.mr.nextrun.drivers else "no previous value"
+			self.log.debug("drivers_changed: next model run driver %s changed from %s to %s" % (subfield,old_driver_val,
+				str(self.controlstate['drivers'][subfield])))
 			self.mr.nextrun.drivers[subfield] = self.controlstate['drivers'][subfield]
 		
 
@@ -484,7 +505,7 @@ class Synchronizer(object):
 			options_dict = dict()
 			#Short circuting options
 			if 'all' in allowed[var]:
-				options_dict=all_options_dict.copy()	
+				options_dict=all_options_dict.deepcopy()	
 			elif 'none' in allowed[var]:
 				pass #Return an empty
 			#Iterate through list of allowed values
@@ -543,7 +564,7 @@ class Synchronizer(object):
 		If it's a line we are plotting we only need 1-d data in the model and can save some time, 
 		but if we will be plotting a pcolor or map, we'll need 2-d data. 
 		
-		Also tells that ModelRun which position variables will constant,
+		Also tells that ModelRun which position variables will be constant,
 		and which independant: i.e. if we are plotting a 'Temperature'
 		vs. 'Altitude' plot, then we want to determine which latitude
 		and longitude values the user wants the model to calculate the altitude profile
@@ -772,7 +793,7 @@ class UiHandler(object):
 	"""
 	exposed = True
 	def __init__(self,amwo):
-		self.log = logging.getLogger(__name__)
+		self.log = logging.getLogger(self.__class__.__name__)
 
 		self.amwo = amwo #Parent atmodweb object
 		self.controlstate = ControlStateManager()
@@ -870,6 +891,10 @@ class UiHandler(object):
 			retval = self.controlstate[posttype]
 			self.log.info(ansicolors.HEADER+'POST for posttype:%s returning %s' % (posttype,str(retval))+ansicolors.ENDC)
 			return {posttype:retval}
+		elif posttype == 'restart':
+			self.log.info(ansicolors.HEADER+"POST for posttype: restart THE BACKEND WILL NOW RESTART %d" %+ansicolors.ENDC)
+			self.amwo.restart()
+			return {'restart':True}
 		elif posttype == 'nextplot':
 			self.controlstate.lastind = self.controlstate.lastind + 1 #lastind is a property. the setter will cause the controlstate to re-sync
 			self.log.info(ansicolors.HEADER+"POST for posttype: nextplot get plot at index %d" % (self.controlstate.lastind)+ansicolors.ENDC)
@@ -1017,13 +1042,15 @@ class UiHandler(object):
 			newval = self.input_sanitize(newval)
 
 		if subfield is None: #Top level put
-			self.log.info(ansicolors.OKBLUE+'PUT request for statevar:%s new value %s, type: %s ' % (str(statevar),str(newval),str(type(newval)))+ansicolors.ENDC)
+			self.log.info(ansicolors.OKBLUE+'PUT request for statevar:%s old value: %s, new value %s, type: %s ' % (str(statevar),
+				str(self.controlstate[statevar]),str(newval),str(type(newval)))+ansicolors.ENDC)
 			if statevar in self.controlstate:
 				self.controlstate[statevar] = newval
 			else:
 				raise RuntimeError('PUT request with invalid controlstate addressee %s, data: %s' % (str(statevar),str(newval)))
 		else: 
-			self.log.info(ansicolors.OKBLUE+'PUT request for statevar:%s, subfield:%s, new value %s, type: %s ' % (str(statevar),str(subfield),str(newval),str(type(newval)))+ansicolors.ENDC)
+			self.log.info(ansicolors.OKBLUE+'PUT request for statevar:%s, subfield:%s, old value %s, new value %s, type: %s ' % (str(statevar),
+				str(subfield),str(self.controlstate[statevar][subfield]),str(newval),str(type(newval)))+ansicolors.ENDC)
 			if hasattr(self.controlstate[statevar],'__setitem__'): #Must be some kind of dict like thing
 				self.controlstate[statevar][subfield] = newval
 				#Have to explicitly trigger changed since we aren't explicitly 
@@ -1112,20 +1139,32 @@ class FakeCanvas(object):
 
 class AtModWebObj(object):
 	def __init__(self):
-		self.log = logging.getLogger(__name__)
+		self.log = logging.getLogger(self.__class__.__name__)
 		self.rootdir = os.environ['ATMODWEB_ROOT_DIR'] 
 		self.imgreldir = 'www'
 		self.docreldir = 'docs'
+		self.n_max_plots = 20
+		self.n_total_plots = 0
+		#Start up the rest of the application
 		self.uihandler = UiHandler(self)
 		self.controlstate = self.uihandler.controlstate
 		self.canvas = FakeCanvas(self)
 		self.syncher = Synchronizer(self.canvas,self.uihandler)
-
 		self.syncher.refresh(force_full_refresh=True)
 		self.plots = glob.glob(os.path.join(self.rootdir,self.imgreldir,'session_file_*.png')) #List of all plots in the img dir
-		self.n_max_plots = 20
-		self.n_total_plots = 0
 		self.replot()
+
+	def restart(self):
+		#A full scale panic restart
+		#Just reinitalize all the things
+		self.log.warn("---RESTARTING THE BACKEND. EXPIRING ALL SESSIONS---")
+		cherrypy.sessions.expire()
+		self.uihandler = UiHandler(self)
+		self.controlstate = self.uihandler.controlstate
+		self.canvas = FakeCanvas(self)
+		self.syncher = Synchronizer(self.canvas,self.uihandler)
+		self.syncher.refresh(force_full_refresh=True)
+		self.replot()		
 
 	def replot(self):
 		#self.canvas.refresh(force_full_refresh=True)

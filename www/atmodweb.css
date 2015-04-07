@@ -2,6 +2,18 @@ body {
 	background: #222222
 }
 
+.highlight {
+    -webkit-transition: text-shadow 0.2s linear;
+    -moz-transition: text-shadow 0.2s linear;
+    -ms-transition: text-shadow 0.2s linear;
+    -o-transition: text-shadow 0.2s linear;
+    transition: text-shadow 0.2s linear;
+}
+
+.highlight:hover,.highlight.glow {
+    text-shadow: 0 0 10px red;
+}
+
 div#titlepanel {
 
 	width: 95%;
