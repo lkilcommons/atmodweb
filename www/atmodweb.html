@@ -69,7 +69,7 @@
             $all_var_bounds = $("#xbounds,#ybounds,#zbounds")
             
             //Selector for everything
-            $all_controls = $("#xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
+            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
 
             //Set up the functions to change controlstates
 
@@ -118,7 +118,7 @@
             //Custom Logging Function, Python Style
             $loglevel= 5; 
             $logarr = ['ATMODWEB LOG'];
-            $logon = true;
+            $logon = false;
             $logit = function(level,context,message) {
                 var now = Date.now()
                 var logstr = "["+String(now)+"]"+"["+context+"] "
@@ -262,16 +262,24 @@
             $plottype_sel.on("focus",function(e) {
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
-                
+                var done = $.Deferred()
                 //Use the name attr of the input to decide what field of the datetime object we will get
                 
                 var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
                     success: function(json) {
-                        $(e.target).val(json[myname])
+                        var newval = json[myname]
                         $cblog(3,e,"Plottype from backend is: "+json[myname])
+			if (newval != $(e.target).val()) {
+				$(e.target).val(json[myname])
+                        	$cblog(3,e,"Plottype changed to: "+newval)
+				var changedtype = $plottype_sel.triggerHandler("change")
+				$.when(changedtype).then(done.resolve())
+				$(e.target).fadeOut(200).fadeIn(200)
+			}
+			
                     }
                 })
-                return doneprocessing
+                return $.when(doneprocessing).then(done)
                 //e.preventDefault()
             });
 
@@ -893,7 +901,7 @@
             });
                 
             //Bind a click handler to the debug panel to hide it on click, or initialize it if nessecary
-            $("#debugpanel").on('click',function() {
+            $("#debugpanel").on('click',function(e) {
                 $cblog(5,e,"In callback")
                 if ( $("#debugpanel").hasClass("debug_on") ) {
                     $("#debugpanel").removeClass("debug_on")
