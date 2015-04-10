@@ -262,7 +262,7 @@ class ControlStateManager(object):
 		if key not in self.special_keys:
 			return self.controlstate[key]
 		elif key == 'lasterror': #Extra behaviors
-			self.log.info("Returning error %s to controlstate caller" % (self.error[-1]))
+			self.log.info("Returning error %s to controlstate caller" % (self.errors[-1]))
 			if len(self.errors) > 0:
 				return self.errors[-1]
 			else:
@@ -274,8 +274,9 @@ class ControlStateManager(object):
 		#Fill up the controlstate instance
 		self.log.debug("Overwriting working controlstate with default values.")
 		for key in self.default_controlstate:
-			self.controlstate[key]=self.default_controlstate[key]
-		
+			self.controlstate[key]=self.default_controlstate[key]	
+	
+
 	def changed(self,key=None):
 		"""
 		Is the current value assigned to key changed since last updatelast call?
@@ -287,8 +288,21 @@ class ControlStateManager(object):
 					ch[key]=self.controlstate[key]
 			return ch
 		elif len(self.states)>=1:
+			
 			if key in self.states[-1]:
-				return self.states[-1][key] != self.controlstate[key]
+				#Typecheck
+				if isinstance(self.controlstate[key],list) and isinstance(self.states[-1][key],list):
+					if len(self.controlstate[key]) != len(self.states[-1][key]):
+						return false
+				if isinstance(self.controlstate[key],dict) != isinstance(self.states[-1][key],dict):
+					return False
+				try:
+					oldeqnew = self.states[-1][key] != self.controlstate[key] 
+				except:
+					self.log.error("Unable to compare this controlstate key %s with last, because compare statement errored" % (key))
+				 	self.log.error("self.states[-1][%s]=i\n%s\nself.controlstate[%s]=\n%s" % (key,str(self.states[-1][key]),key,str(self.controlstate[key])))
+					return False	
+				return oldeqnew 
 			else:
 				self.log.warn("Key %s not in controlstate memory\n" % (key))
 				return True
@@ -505,7 +519,7 @@ class Synchronizer(object):
 			options_dict = dict()
 			#Short circuting options
 			if 'all' in allowed[var]:
-				options_dict=all_options_dict.deepcopy()	
+				options_dict=copy.deepcopy(all_options_dict)	
 			elif 'none' in allowed[var]:
 				pass #Return an empty
 			#Iterate through list of allowed values
@@ -697,7 +711,7 @@ class Synchronizer(object):
 			except RuntimeError as e: #Prepare model run can throw quite a few possible runtime errors based on incorrect variables selection
 				self.log.error("Model preperation FAILED. Calling controlstate error function")
 				self.log.error( traceback.format_exc() )
-				self.controlstate.error("Prep for model call FAILED: "+e.strerror)
+				self.controlstate.error("Prep for model call FAILED: "+str(e))
 				#Continue erroring
 				raise 
 
@@ -1128,7 +1142,7 @@ class FakeCanvas(object):
 		elif self.atmo.syncher.pdh.plottype=='map':
 			#Colorbar Ticks
 			
-			mpl.artist.setp(self.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
+			mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
 			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd+.5)
 			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd+.5)
 			self.atmo.syncher.pdh.cb.outline.set_linewidth(w)
