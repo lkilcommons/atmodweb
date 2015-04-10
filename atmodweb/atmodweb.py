@@ -382,7 +382,7 @@ class Synchronizer(object):
 		self.canvas = canvas #The FakeCanvas instance we will plot on
 		self.uihand = uihand
 		self.controlstate =  self.uihand.controlstate #The UI Handler has to spin up the controlstate b
-		self.pdh = PlotDataHandler(self.canvas,self.controlstate) #PDH needs canvas, obviously since it needs to plot
+		self.pdh = PlotDataHandler(self.canvas,controlstate=self.controlstate) #PDH needs canvas, obviously since it needs to plot
 		self.initModelRunner()
 		
 		#Bind on changed methods
