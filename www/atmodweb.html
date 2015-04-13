@@ -635,7 +635,7 @@
                         var getting_error = $.ajax({url: "/uihandler", data: {"statevar":"lasterror"},type: "GET",
                             success: function (json) {
                                 alert("Oops, I couldn't refresh your plot. Please check that your selections make sense and press the plot button again. This message from the server may give you an idea what went wrong: "+String(json['lasterror']))
-                            
+                            $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                             }
                         })
                         return getting_error
@@ -660,6 +660,7 @@
                         error : function ( jqxhr ) {
                             $cblog(1,e,"FAILED replotnow POST request text is: "+jqxhr.responseText)
                             alert("Oops, I was unable to save your plot. Please change your selections and try again.")
+                            $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                         }
                         
                     })
@@ -865,6 +866,7 @@
 
                         $cblog(1,e,"FAILED to AJAX in previous plot url, caption, index, response was: "+jqxhr.responseText)
                         alert("Sorry, I couldn't retrieve previous plot")
+                        $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                     }
 
                 });
@@ -901,6 +903,7 @@
                     error: function (jqxhr) {
                         $cblog(1,e,"FAILED to AJAX in nextplot plot url, caption, index, response was: "+jqxhr.responseText)
                         alert("Sorry, I couldn't retrieve next plot")
+                        $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                     }
 
                 });

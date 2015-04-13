@@ -437,6 +437,8 @@ class Synchronizer(object):
 		self.pdh.clear_data()
 		self.log.debug(self.mr.runs[-1].drivers.__class__.__name__+':'+str(self.mr.runs[-1].drivers))
 		self.controlstate['drivers']=self.mr.runs[-1].drivers.copyasdict()
+		for key in self.controlstate['datetime']:
+			self.controlstate['datetime'][key] = getattr(self.mr.runs[-1].drivers['dt'],key)
 		self.controlstate['drivers_units']=copy.deepcopy(self.mr.runs[-1].drivers.units)
 
 	def autoscale(self):
