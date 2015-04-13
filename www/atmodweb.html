@@ -689,6 +689,8 @@
                     //var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshmodeloptions"},type: "POST"})
                     //$(".dynamicinput").remove()
                     theinputs = $(".dynamicinput")
+
+                    
                     var getting_drivers = $.ajax({url: "/uihandler",data: {"statevar":"drivers"},type:"GET",
                         success: function(json){
                             $cblog(4,e,"Now building dynamic drivers list");
@@ -709,7 +711,7 @@
 
                                 if ( theinput.length==0 ) {
                                     $cblog(4,e,"Creating new input and label for "+String(key)+": "+String(value))
-                                    theinput = $("<input type='text' class='dynamicinput' size='15'>").val(value).attr("name",key).attr("ID",'dynamicinput'+key)
+                                    theinput = $("<input type='text' class='dynamicinput' size="+String(String(value).length)+">").val(value).attr("name",key).attr("ID",'dynamicinput'+key)
                                     //Make a new change callback
                                     theinput.on("change",function(e){
                                         $cblog(5,e,"In callback")
@@ -734,7 +736,7 @@
                                         })
                                         return ajax_done
                                     });
-                                    //Make a new label
+                                    
                                     thelabel = $("<label class='dynamicinput'>").text(key+": ").attr("ID",'dynamicinputlabel'+key)
                                     $("#dynamicdriverdiv").append(thelabel.append(theinput)) 
                                     $("#dynamicdriverdiv").append($("<br class='dynamicinput'>").attr("ID",'dynamicinputbr'+key))
@@ -758,7 +760,21 @@
                     });
                     $("#dynamicdriverdiv").removeClass("initialize_me")
                     $driver_reinit = false
-                    $.when(getting_drivers).done(all_done.resolve)
+
+                    var getting_units = $.when(getting_drivers).then($.ajax({url: "/uihandler",data: {"statevar":"drivers_units"},type:"GET",
+                        success: function(json){
+                            //Put the driver units on the labels
+                            $.each(json['drivers_units'],function(key,val){
+                                var oldval = $("#dynamicinputlabel"+key).text()
+                                if (val != null && oldval.indexOf('World') == -1) {
+                                    $("#dynamicinputlabel"+key).append("<span class='dynamicinput'>["+String(val)+"]</span>")
+                                }
+                            })
+                            
+                        }
+                    }));
+
+                    $.when(getting_units).done(all_done.resolve)
                 } else {
                     $cblog(4,e,"Drivers not set to reinit, resolving main Deferred")
                     all_done.resolve()

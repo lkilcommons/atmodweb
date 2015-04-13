@@ -183,7 +183,7 @@ class ControlStateManager(object):
 			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
 			'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
 			'thisplot':None,'thiscaption':None,'mapproj':'moll',
-			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)}}
+			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},'drivers_units':{'dt':None}}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
 								  #the methods are called. Sort of an ad-hoc slots and signals a'la QT
@@ -262,8 +262,8 @@ class ControlStateManager(object):
 		if key not in self.special_keys:
 			return self.controlstate[key]
 		elif key == 'lasterror': #Extra behaviors
-			self.log.info("Returning error %s to controlstate caller" % (self.errors[-1]))
 			if len(self.errors) > 0:
+				self.log.info("Returning error %s to controlstate caller" % (self.errors[-1]))
 				return self.errors[-1]
 			else:
 				return "No Error"
@@ -437,6 +437,7 @@ class Synchronizer(object):
 		self.pdh.clear_data()
 		self.log.debug(self.mr.runs[-1].drivers.__class__.__name__+':'+str(self.mr.runs[-1].drivers))
 		self.controlstate['drivers']=self.mr.runs[-1].drivers.copyasdict()
+		self.controlstate['drivers_units']=copy.deepcopy(self.mr.runs[-1].drivers.units)
 
 	def autoscale(self):
 		"""Updates the xbounds,ybounds and zbounds in the controlstate from the lims dictionary in last model run"""
@@ -701,7 +702,16 @@ class Synchronizer(object):
 		if self.controlstate.changed('datetime') or ffr:
 			#Force model rerun
 			self.controlstate['run_model_on_refresh']=True
-			self.mr.nextrun.drivers['dt'] = datetime.datetime(**self.controlstate['datetime'])
+			try:
+				self.mr.nextrun.drivers['dt'] = datetime.datetime(**self.controlstate['datetime'])
+			except:
+				#Capture the error for retrieval by the frontend failure callback
+				self.log.error("Badly formed time! Calling controlstate error function")
+				self.log.error( traceback.format_exc() )
+				self.controlstate.error("Badly formed time!: "+str(sys.exc_info()))
+				self.controlstate.restore_last_good()
+				raise #continue erroring
+
 			self.log.info("Datetime was changed since last refresh. Will rerun %s with datetime %s" % (self.controlstate['modelname'],
 				self.mr.nextrun.drivers['dt'].strftime('%c')))
 
