@@ -176,13 +176,13 @@ class ControlStateManager(object):
 		
 		self.states = [] #List of controlstates
 		self.default_controlstate = {'model_index':-1,'datetime':{'year':2000,'month':6,'day':21,'hour':12,'minute':0,'second':0},\
-			'lat':40.0274,'lon':105.2519,'alt':110.,\
+			'lat':40.0274,'lon':105.2519,'alt':200.,\
 			'plottype':'pcolor',\
-			'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50.,'xlog':False,'xmulti':False,\
-			'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50.,'ylog':False,'ymulti':False,\
-			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,\
+			'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50.,'xlog':False,'xmulti':False,'xunits':'deg','xdesc':'Longitude',\
+			'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50.,'ylog':False,'ymulti':False,'yunits':'deg','ydesc':'Geodetic Latitude',\
+			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
 			'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
-			'thisplot':None,'thiscaption':None,
+			'thisplot':None,'thiscaption':None,'mapproj':'moll',
 			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)}}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
@@ -293,7 +293,7 @@ class ControlStateManager(object):
 				#Typecheck
 				if isinstance(self.controlstate[key],list) and isinstance(self.states[-1][key],list):
 					if len(self.controlstate[key]) != len(self.states[-1][key]):
-						return false
+						return False
 				if isinstance(self.controlstate[key],dict) != isinstance(self.states[-1][key],dict):
 					return False
 				try:
@@ -337,11 +337,14 @@ class ControlStateManager(object):
 		"""Copies all values from controlstate at states[ind] to current controlstate"""
 		self.log.debug("Restoring controlstate from history at index[%d]" % (ind))
 		for key in self.states[ind]:
-			if self.controlstate[key] != self.states[ind][key]:
-				self.log.debug("--On restore: differing values:\n--current controlstate %s value:\n ---%s \n with self.states[%s][%s], value:\n ---%s" % (key,
-				str(self.controlstate[key]),str(ind),str(key),str(self.controlstate[key])))
 			self.controlstate[key]=self.states[ind][key]
-				
+			try:
+				if self.controlstate[key] != self.states[ind][key]:
+					self.log.debug("--On restore: differing values:\n--current controlstate %s value:\n ---%s \n with self.states[%s][%s], value:\n ---%s" % (key,
+					str(self.controlstate[key]),str(ind),str(key),str(self.controlstate[key])))
+			except: #This should not be a breaking error
+				pass 
+
 	def restore_last_good(self):
 		"""
 		Tries to find a model run with model_run_success = True and then restores those settings
@@ -409,6 +412,8 @@ class Synchronizer(object):
 		self.controlstate.bind_changed('zvar',self.zvar_changed)
 		self.controlstate.bind_changed('datetime',self.datetime_changed)
 		self.controlstate.bind_changed('drivers',self.drivers_changed)
+		self.controlstate.bind_changed('mapproj',self.mapproj_changed)
+		self.controlstate.bind_changed('modelname',self.modelname_changed)
 
 
 	def initModelRunner(self):
@@ -430,15 +435,16 @@ class Synchronizer(object):
 		#Update the drivers dictionary in
 		self.log.info("refreshModelRunOptions called...copying drivers dictionary and clearing plot data handler data")
 		self.pdh.clear_data()
-		self.controlstate['drivers']=self.mr.runs[-1].drivers.copy()
+		self.log.debug(self.mr.runs[-1].drivers.__class__.__name__+':'+str(self.mr.runs[-1].drivers))
+		self.controlstate['drivers']=self.mr.runs[-1].drivers.copyasdict()
 
 	def autoscale(self):
 		"""Updates the xbounds,ybounds and zbounds in the controlstate from the lims dictionary in last model run"""
 		self.mr.runs[-1].autoscale_all_lims() #Sets all lims to their min and max in the model data
 
-		xdata,xlims = self.mr[self.controlstate['xvar']] #returns data,lims
-		ydata,ylims = self.mr[self.controlstate['yvar']] #returns data,lims
-		zdata,zlims = self.mr[self.controlstate['zvar']] #returns data,lims
+		xdata,xlims,xunits = self.mr[self.controlstate['xvar']] #returns data,lims
+		ydata,ylims,yunits = self.mr[self.controlstate['yvar']] #returns data,lims
+		zdata,zlims,zunits = self.mr[self.controlstate['zvar']] #returns data,lims
 
 		self.controlstate['xbounds']=xlims
 		self.controlstate['ybounds']=ylims
@@ -456,6 +462,9 @@ class Synchronizer(object):
 			self.log.debug("drivers_changed: next model run driver %s changed from %s to %s" % (subfield,old_driver_val,
 				str(self.controlstate['drivers'][subfield])))
 			self.mr.nextrun.drivers[subfield] = self.controlstate['drivers'][subfield]
+			if subfield == 'dt':
+				for f in self.controlstate['datetime']:
+					self.controlstate['datetime'][f] = getattr(self.controlstate['drivers']['dt'],f)
 		
 
 	def datetime_changed(self,subfield=None):
@@ -470,29 +479,47 @@ class Synchronizer(object):
 	
 	def xvar_changed(self):
 		"""Updates the xbounds in the controlstate when a new xvar is selected"""
-		xdata,xlims = self.mr[self.controlstate['xvar']] #returns data,lims, works for multi
+		xdata,xlims,xunits,xdesc = self.mr[self.controlstate['xvar']] #returns data,lims, works for multi
 		self.controlstate['xbounds']=xlims
+		self.controlstate['xunits']=xunits
+		self.controlstate['xdesc']=xdesc
 
 	def yvar_changed(self):
 		"""Updates the ybounds in the controlstate when a new yvar is selected"""
-		ydata,ylims = self.mr[self.controlstate['yvar']] #returns data,lims, works for multi
+		ydata,ylims,yunits,ydesc = self.mr[self.controlstate['yvar']] #returns data,lims, works for multi
 		self.controlstate['ybounds']=ylims
+		self.controlstate['yunits']=yunits
+		self.controlstate['ydesc']=ydesc
 
 	def zvar_changed(self):
 		"""Updates the zbounds in the controlstate when a new zvar is selected"""
-		zdata,zlims = self.mr[self.controlstate['zvar']] #returns data,lims, works for multi
+		zdata,zlims,zunits,zdesc = self.mr[self.controlstate['zvar']] #returns data,lims, works for multi
 		self.controlstate['zbounds']=zlims
+		self.controlstate['zunits']=zunits
+		self.controlstate['zdesc']=zdesc
+
 
 	def xbounds_changed(self):
 		"""Function which is called whenever the xbounds are changed in the controlstate. Changes limits for next model run"""
 		if not self.is_multi('x') and self.is_position('x'): 
-			self.mr.nextrun.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
+			self.mr.nextrun.vars.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
 	
 	def ybounds_changed(self):
 		"""Function which is called whenever the ybounds are changed in the controlstate. Changes limits for next model run"""
 		if not self.is_multi('y') and self.is_position('y'): 
-			self.mr.nextrun.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
+			self.mr.nextrun.vars.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
 
+	def mapproj_changed(self):
+		"""Map projection type changed"""
+		if self.controlstate['mapproj'] in self.pdh.supported_projections:
+			self.pdh.mapproj = self.controlstate['mapproj']
+
+	def modelname_changed(self):
+		"""Model name is changed, big reinit"""
+		if self.controlstate['modelname'] in ['msis','hwm']:
+			self.initModelRunner()
+			self.refreshSelectOptions()
+			self.refreshModelRunOptions()
 
 	#Set what we are allowed to plot
 	def refreshSelectOptions(self):
@@ -512,7 +539,7 @@ class Synchronizer(object):
 		allowed['z'] = self.plotProperty('z_allowed')
 
 		all_options_dict = dict()
-		for k in self.mr.runs[-1].vars.keys():
+		for k in self.mr.runs[-1].vars:
 			all_options_dict[k]=k
 
 		for var in ['x','y','z']:
@@ -608,14 +635,14 @@ class Synchronizer(object):
 				raise RuntimeError('xvar %s is not a valid position variable!' % (self.controlstate['xvar']))
 			else:
 				#self.mr.nextrun.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
-				self.mr.nextrun.npts[self.controlstate['xvar']] = self.controlstate['xnpts']
+				self.mr.nextrun.vars.npts[self.controlstate['xvar']] = self.controlstate['xnpts']
 				self.mr.nextrun.set_x(self.controlstate['xvar'])
 
 			if not self.is_position('y'):
 				raise RuntimeError('yvar %s is not a valid position variable!' % (self.controlstate['yvar']))
 			else:
 				#self.mr.nextrun.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
-				self.mr.nextrun.npts[self.controlstate['yvar']] = self.controlstate['ynpts']
+				self.mr.nextrun.vars.npts[self.controlstate['yvar']] = self.controlstate['ynpts']
 				self.mr.nextrun.set_y(self.controlstate['yvar'])
 			
 		else: #We do not need to grid data
@@ -630,16 +657,16 @@ class Synchronizer(object):
 				raise RuntimeError('Multiple plotting of position variables is not allowed!')
 				
 			elif not self.is_position('x') and not self.is_position('y'):
-				raise RuntimeError('%s and %s are both not valid position variables!' % (self.controlstate['xvar'],self.controlstate['yvar']))
+				raise RuntimeError('%s and %s are both not valid position variables!' % (str(self.controlstate['xvar']),str(self.controlstate['yvar'])))
 			
 			elif not self.is_multi('x') and self.is_position('x'): #It's scalar, so check if it's a position
 				#self.mr.nextrun.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
-				self.mr.nextrun.npts[self.controlstate['xvar']] = self.controlstate['xnpts']
+				self.mr.nextrun.vars.npts[self.controlstate['xvar']] = self.controlstate['xnpts']
 				self.mr.nextrun.set_x(self.controlstate['xvar'])
 
 			elif not self.is_multi('y') and self.is_position('y'): #It's scalar, so check if it's a position
 				#self.mr.nextrun.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
-				self.mr.nextrun.npts[self.controlstate['yvar']] = self.controlstate['ynpts']
+				self.mr.nextrun.vars.npts[self.controlstate['yvar']] = self.controlstate['ynpts']
 				self.mr.nextrun.set_y(self.controlstate['yvar'])
 			else:
 				raise RuntimeError('Nonsensical variables: xvar:%s\n yvar:%s\n' % (repr(self.controlstate['xvar']),repr(self.controlstate['yvar'])))
@@ -741,12 +768,12 @@ class Synchronizer(object):
 		#Always grab the most current data	
 		self.log.info("Now getting data for X=%s Y=%s and Z=%s via ModelRunner __getitem__" % (self.controlstate['xvar'],
 			self.controlstate['yvar'],self.controlstate['zvar']))
-		latlims = self.mr.runs[-1].lims['Latitude']
-		lonlims = self.mr.runs[-1].lims['Longitude']
-		altlims = self.mr.runs[-1].lims['Altitude']
-		xdata,xlims = self.mr[self.controlstate['xvar']] #returns data,lims, correctly handles list xvar
-		ydata,ylims = self.mr[self.controlstate['yvar']] #returns data,lims, correctly handles list yvar
-		zdata,zlims = self.mr[self.controlstate['zvar']] #returns data,lims, correctly handles list zvar
+		latlims = self.mr.runs[-1].vars.lims['Latitude']
+		lonlims = self.mr.runs[-1].vars.lims['Longitude']
+		altlims = self.mr.runs[-1].vars.lims['Altitude']
+		xdata,xlims,xunits,xdesc = self.mr[self.controlstate['xvar']] #returns data,lims, correctly handles list xvar
+		ydata,ylims,yunits,ydesc = self.mr[self.controlstate['yvar']] #returns data,lims, correctly handles list yvar
+		zdata,zlims,zunits,zdesc = self.mr[self.controlstate['zvar']] #returns data,lims, correctly handles list zvar
 		
 		#Reset the bounds, multiplotting and turn of log scaling if we have changed any variables or switched on or off of difference mode
 		if self.controlstate.changed('xvar') or self.controlstate.changed('yvar') or \
@@ -758,25 +785,36 @@ class Synchronizer(object):
 			self.controlstate['xbounds'] = xlims
 			self.controlstate['ybounds'] = ylims
 			self.controlstate['zbounds'] = zlims
+			
+			self.controlstate['xunits'] = xunits
+			self.controlstate['yunits'] = yunits
+			self.controlstate['zunits'] = zunits
+			
+			self.controlstate['xdesc'] = xdesc
+			self.controlstate['ydesc'] = ydesc
+			self.controlstate['zdesc'] = zdesc
+
 
 		#Associate data in the data handler based on what variables are desired
 		if self.controlstate.changed('xvar') or self.controlstate.changed('xbounds') or self.controlstate.changed('xlog') or self.controlstate['run_model_on_refresh'] or ffr: 
 			xname = self.controlstate['xvar']
 			self.log.info("Associating x variable %s with plot data handler bounds %s, log %s" % (str(xname),
 							str(self.controlstate['xbounds']),str(self.controlstate['xlog'])))
-			self.pdh.associate_data('x',xdata,xname,self.controlstate['xbounds'],self.controlstate['xlog'],multi=self.controlstate['xmulti'])
+			self.pdh.associate_data('x',xdata,xname,self.controlstate['xbounds'],self.controlstate['xlog'],
+				multi=self.controlstate['xmulti'],units=xunits,description=xdesc)
 			
 		if self.controlstate.changed('yvar') or self.controlstate.changed('ybounds') or self.controlstate.changed('ylog') or self.controlstate['run_model_on_refresh'] or ffr: 
 			yname = self.controlstate['yvar']
 			self.log.info("Associating y variable %s with plot data handler bounds %s, log %s" % (str(yname),
 							str(self.controlstate['ybounds']),str(self.controlstate['ylog'])))
-			self.pdh.associate_data('y',ydata,yname,self.controlstate['ybounds'],self.controlstate['ylog'],multi=self.controlstate['ymulti'])
+			self.pdh.associate_data('y',ydata,yname,self.controlstate['ybounds'],self.controlstate['ylog'],
+				multi=self.controlstate['ymulti'],units=yunits,description=ydesc)
 			
 		if self.controlstate.changed('zvar') or self.controlstate.changed('zbounds') or self.controlstate.changed('zlog') or self.controlstate['run_model_on_refresh'] or ffr:
 			zname = self.controlstate['zvar']
 			self.log.info("Associating z variable %s with plot data handler bounds %s, log %s" % (str(zname),
 							str(self.controlstate['zbounds']),str(self.controlstate['zlog'])))
-			self.pdh.associate_data('z',zdata,zname,self.controlstate['zbounds'],self.controlstate['zlog'])
+			self.pdh.associate_data('z',zdata,zname,self.controlstate['zbounds'],self.controlstate['zlog'],units=zunits,description=zdesc)
 
 		#Actually make the plot
 		try:
@@ -819,7 +857,7 @@ class UiHandler(object):
 		"""
 
 		if isinstance(indata,dict):
-			outdata = indata.copy()
+			outdata = copy.deepcopy(indata)
 			for k in outdata:
 				outdata[k] = self.output_sanitize(outdata[k])
 		elif isinstance(indata,datetime.datetime):
@@ -851,6 +889,7 @@ class UiHandler(object):
 				Does NOT ever have a key of subfield.
 		"""
 		retjson = dict()
+		#Direct getting from ControlState
 		if statevar in self.controlstate and subfield is None:
 			retval = self.controlstate[statevar]
 			self.log.info('GET for statevar:%s returning %s' % (statevar,str(retval)))
@@ -863,11 +902,18 @@ class UiHandler(object):
 					mymeth = getattr(self.controlstate[statevar],subfield)
 					retval = mymeth
 					self.log.warn("UNSAFE GET Eval %s = self.controlstate[%s].%s()" % (str(retval),statevar,str(subfield)))
+		#Special cases
 		elif statevar == 'controlstate':
 			retval=dict()
 			for key in self.controlstate:
 				if self.controlstate.changed(key):
-					retval[key]=self.controlstate.ashtml(key)	
+					retval[key]=self.controlstate.ashtml(key)
+		elif statevar == 'vars':
+			retval = dict()
+			for prefix in ['x','y','z']:
+				for suffix in ['var','bounds','units','desc','log']:
+					retval[prefix+suffix] = dict.__getitem__(self.controlstate,prefix+suffix) 
+
 		retjson[statevar]=self.output_sanitize(retval)
 		return retjson
 
@@ -906,7 +952,7 @@ class UiHandler(object):
 			self.log.info(ansicolors.HEADER+'POST for posttype:%s returning %s' % (posttype,str(retval))+ansicolors.ENDC)
 			return {posttype:retval}
 		elif posttype == 'restart':
-			self.log.info(ansicolors.HEADER+"POST for posttype: restart THE BACKEND WILL NOW RESTART %d" %+ansicolors.ENDC)
+			self.log.info(ansicolors.HEADER+"POST for posttype: restart THE BACKEND WILL NOW RESTART" +ansicolors.ENDC)
 			self.amwo.restart()
 			return {'restart':True}
 		elif posttype == 'nextplot':
@@ -1172,7 +1218,7 @@ class AtModWebObj(object):
 		#A full scale panic restart
 		#Just reinitalize all the things
 		self.log.warn("---RESTARTING THE BACKEND. EXPIRING ALL SESSIONS---")
-		cherrypy.sessions.expire()
+		cherrypy.lib.sessions.expire()
 		self.uihandler = UiHandler(self)
 		self.controlstate = self.uihandler.controlstate
 		self.canvas = FakeCanvas(self)

@@ -78,10 +78,23 @@
             //Init stuff - set debug options - temporary stuff
             $("#debugpanel").addClass("debug_on").addClass("initialize_me")
             $("#dynamicdriverdiv").addClass("initialize_me")
+            $(".debug").hide() // hide debug stuff till we press F1
 
             //-------------------------------------------------------
             //Functions which preform repeated tasks
             //-------------------------------------------------------
+
+            $hide_controls = function(loadstr) {
+                $("#loading_message").text(loadstr)
+                $("#loading").hide()
+                $("#wrap").hide()
+                $("#loading").fadeIn(500)
+            }
+
+            $show_controls = function () {
+                $("#wrap").fadeIn(500)
+                $("#loading").fadeOut(500)   
+            }
 
             //Make a debugging console log printing thing to put in ajax error
             $generic_error_func = function (jqxhr,status,error) {
@@ -149,17 +162,17 @@
                 var xvar = $xvar_sel.val()
                 var yvar = $yvar_sel.val()
                 var zvar = $zvar_sel.val()
-                if ( $.isArray(xvar) ){ xvar = xvar[0] }
-                if ( $.isArray(yvar) ){ yvar = yvar[0] }
-                if ( $.isArray(zvar) ){ zvar = zvar[0] }
+                if ( $.isArray(xvar) ){ xvar = xvar[0] };
+                if ( $.isArray(yvar) ){ yvar = yvar[0] };
+                if ( $.isArray(zvar) ){ zvar = zvar[0] };
                 
                 var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) != -1
                 var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  != -1
                 var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) != -1
                 if (debug == true) { console.log([xvar,yvar,zvar])}
                 if (debug == true) { console.log([lat_in,lon_in,alt_in])}
-                $("#latinputlbl").hide()
-                $("#latinputlbl").hide()
+                //$("#latinputlbl").hide()
+                //$("#loninputlbl").hide()
 
                 if (lat_in) { $("#latinputlbl").hide() } else { $("#latinputlbl").show() } 
                 if (lon_in) { $("#loninputlbl").hide() } else { $("#loninputlbl").show() }
@@ -254,6 +267,7 @@
             }
 
             
+            $hide_controls("Prepare for launch!")
 
             //-----------------------------------------------------
             //Handlers which initialize or update UI control values
@@ -482,21 +496,21 @@
 
             //--Model Select Dropdown
             $("#model_select").on("change",function(e) {
+                $hide_controls("Changing models to: "+ $(e.target).val())
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var selection = $(e.target).val()
                 $cblog(4,e,"selection is "+String(selection)) 
-                $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
+                var putting_new_model = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
                             success: function (ret) {
-                                var refreshed = $.ajax({url: "/uihandler",data: {"posttype":"refreshnow"},type: "POST"})
-                                refreshed.done(function (data) {
-                                   //$.ajax({url: "/uihandler",data: {"posttype":"refreshmodeloptions"},type: "POST"})
-                                    $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
-                                    $cblog(3,e,"refreshing done and dynamic driver div told to reinit") 
-                                });
+                                $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
+                                $all_var_sel.addClass("initialize_me")
+                                $cblog(3,e,"dynamic driver div told to reinit,triggering all focus") 
+                                return $.when($.when_all_trigger($all_controls,"focus")).then($("#dynamicdriverdiv").triggerHandler("click")).then($init_sel('all')).then($show_controls)
                             }   
-                
-                        })
+                })
+
+                return putting_new_model
             });
 
             //Hide it for now because it doesn't work
@@ -764,7 +778,8 @@
 
 
             //--Set initial plot
-            synching.done(function (thedata) {
+            var firstplot = $.when(synching).then(function (thedata) {
+                var success_done = $.Deferred()
                 $logit(3,"synching.done"," uiready POST has been sent and completed")
                 var plotting_done = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
                     success: function( json ) {
@@ -787,23 +802,25 @@
                                 var xdone = $xvar_sel.triggerHandler("focus")
                                 var ydone = $yvar_sel.triggerHandler("focus")
                                 var zdone = $zvar_sel.triggerHandler("focus")
-                                return $.when(xdone,ydone,zdone).then($hidePosIfNeeded).then($.when_all_trigger('.positioninput,.dateinput',"focus"));
+                                return $.when(xdone,ydone,zdone).then($.when_all_trigger('.positioninput,.dateinput',"focus"));
                             }).then(function (thedata) {
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Now trigger bounds focus")
                                     //trigger all bounds to refresh
                                     return $.when_all_trigger($all_var_bounds,"focus")
-                            }).then($("#dynamicdriverdiv").triggerHandler("click")).done(
+                            }).then($("#dynamicdriverdiv").triggerHandler("click")).then(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
                                 //and update the plot
                                 $logit(4,"syching.done: AJAX: POST:replotnow : success","Now remove loading gif and put in img and caption")        
                                 $("#plotimg").attr("src",json["src"]);    
                                 $("#plotimg_cap").html($format_caption(json["cap"]))
+                                $show_controls()
+                                success_done.resolve()
                             })
                     }
                         
-                        
-                    });
+                });
+                return success_done.promise() 
             });
 
 
@@ -896,63 +913,93 @@
             })
 
             //Bind a click handler to the panic button
-            $("#panic").on("click",function(e) {
-                $.ajax({url: "/uihandler", data: {"posttype":"debugreinit"},type: "POST"})
+            $("#restart").on("click",function(e) {
+                var response = window.confirm("Really restart the backend? You will lose all your plots for this session!")
+                if (response) {
+                    $.ajax({url: "/uihandler", data: {"posttype":"restart"},type: "POST",
+                        success: function (f) {
+                          
+                                window.location.reload(true)
+                        }
+                    })
+                }
             });
                 
+            $("#putstatevar,#putnewval").on("change",function(e) {
+                var newstatevar = $("#putstatevar").val()
+                var newvalue = $("#putnewval").val()
+                var dangerous = $.ajax({url: "/uihandler", data: {"statevar":newstatevar,"newval":newvalue},type: "PUT",dataType: "json"})
+                return dangerous.done($("#plotbutton").triggerHandler("click"))
+            })
+
             //Bind a click handler to the debug panel to hide it on click, or initialize it if nessecary
-            $("#debugpanel").on('click',function(e) {
-                $cblog(5,e,"In callback")
-                if ( $("#debugpanel").hasClass("debug_on") ) {
-                    $("#debugpanel").removeClass("debug_on")
-                    $("#debug_table,#panic").slideUp()
-                } else {
-                    $("#debugpanel").addClass("debug_on")
-                    $("#debug_table,#panic").slideDown()
-                }
-                if ( $("#debugpanel").hasClass("debug_on") ) {
-                    $.ajax({url: "/uihandler",data: {"statevar":"controlstate"},type:"GET",
-                        success: function(json) {
-                            if ( $("#debugpanel").hasClass("initialize_me") ){
-                                $("#debugpanel").append($("<table>").attr("ID","debug_table")).addClass('debug_table')
-                                $("#debugpanel").removeClass("initialize_me")
-                            }
+            //$("#debugpanel").on('click',function(e) {
+            //    $cblog(5,e,"In callback")
+            //    if ( $("#debugpanel").hasClass("debug_on") ) {
+            //        $("#debugpanel").removeClass("debug_on")
+            //        $("#debug_table,#panic").slideUp()
+            //    } else {
+            //        $("#debugpanel").addClass("debug_on")
+            //        $("#debug_table,#panic").slideDown()
+            //    }
+            //    if ( $("#debugpanel").hasClass("debug_on") ) {
+            //        $.ajax({url: "/uihandler",data: {"statevar":"controlstate"},type:"GET",
+            //            success: function(json) {
+            //                if ( $("#debugpanel").hasClass("initialize_me") ){
+            //                    $("#debugpanel").append($("<table>").attr("ID","debug_table")).addClass('debug_table')
+            //                    $("#debugpanel").removeClass("initialize_me")
+            //                }
 
-                            $(".debug_table_el").remove() //Clear old
-                            $.each(json["controlstate"],function(key,value) {
-                                //console.log(value)
-                                $("#debug_table").prepend(
-                                    $("<tr>").append(
-                                        $("<th>").append($("<strong>").text(key)).addClass('debug_table_el').addClass('debug'+key),
-                                        $("<td>").html($.parseHTML(value)).addClass('debug_table_el').addClass('debug'+key)
-                                    )
-                                ).addClass('debug_table')
-                            });
-                            //Make sure all of that class adding was processed
-                            $('.debug_table_el')
-                        }
-
-                    });
-                } else {
-                    $("#debug_table,#panic").hide()
-                }
-            }); 
+            //                $(".debug_table_el").remove() //Clear old
+            //                $.each(json["controlstate"],function(key,value) {
+            //                    //console.log(value)
+            //                    $("#debug_table").prepend(
+            //                        $("<tr>").append(
+            //                            $("<th>").append($("<strong>").text(key)).addClass('debug_table_el').addClass('debug'+key),
+            //                            $("<td>").html($.parseHTML(value)).addClass('debug_table_el').addClass('debug'+key)
+            //                        )
+            //                    ).addClass('debug_table')
+            //                });
+            //                //Make sure all of that class adding was processed
+            //                $('.debug_table_el')
+            //            }
+            //
+            //        });
+            //   } else {
+            //        $("#debug_table,#panic").hide()
+            //    }
+            //}); 
 
             //Force finish of init, implement hackery
-            $.when(synching).then($hidePosIfNeeded());
+            $.when(firstplot).then($hidePosIfNeeded);
         });
 
+        $(document).keypress(function(e) {
+            console.log("keypress id = "+e.which)
+            if(e.which == 68) {
+                // D pressed
+                $(".debug").toggle()
+            }
+            if(e.which == 77) {
+                // M press
+                $("#model_select").toggle()
+            }
+        });
+        
 
-        $(document).on("click", function (e){
+//        $(document).on("click", function (e){
             //This is a hack to get the position controls to hide properly. I have no idea why it's not 
             //working with deferreds as I had hoped. Arg.
-            
-        });
+//           
+//        });
 
     </script>
     <body>
         <div ID = "titlepanel" class="panel">
             <h1 class="h1title">Atmospheric Model Web Explorer (AtModWeb)</h1>
+        </div>
+        <div ID = "loading" class="panel">
+            <h2 ID = "loading_message">Loading...please wait</h2>
         </div>
         <div ID="wrap">
             <div ID="leftcolumn">
@@ -961,7 +1008,7 @@
                 <h2 class="h2title">Location</h2>
                     <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br>
                     <label ID='loninputlbl'>Longitude:<input ID='loninput' type="text" name="lon" size="8" value="" class="positioninput"></label><br>
-                    <label ID='altinputlbl'>Altitude:<input ID='altinput' type="text" name="alt" size="8" value="" class="positioninput"></label>
+                    <label ID='altinputlbl'>Altitude[km]:<input ID='altinput' type="text" name="alt" size="8" value="" class="positioninput"></label>
                 </div>
 
                 <div ID="datepanel" class="panel">
@@ -983,11 +1030,11 @@
                     </div>
                 </div>
 
-                <div ID="debugpanel" class="panel">
+                <div ID="debugpanel" class="panel debug">
                     
-                    <h2 class="h2title">Debugging</h2>
-                    <button ID="panic">Panic Button</button>
-
+                    <h2 class="h2title debug">Debugging</h2>
+                    <label ID='setlabel' class="debug">Send PUT Request<input type="text" name="statevar" class="debug" value="mapproj" ID="putstatevar"><input type="text" name="value" class="debug" value="moll" ID="putnewval"></label>
+                    <button ID="restart" class="debug">Restart Backend</button>
                 </div>
 
             </div>
