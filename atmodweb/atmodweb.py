@@ -1238,7 +1238,8 @@ class AtModWebObj(object):
 		self.syncher.refresh(force_full_refresh=True)
 		self.plots = glob.glob(os.path.join(self.rootdir,self.imgreldir,'session_file_*.png')) #List of all plots in the img dir
 		self.replot()
-
+		
+	@cherrypy.expose
 	def restart(self):
 		#A full scale panic restart
 		#Just reinitalize all the things
