@@ -119,6 +119,36 @@
                 } 
             }
 
+            //Need the myself to call recursively
+            //$num2str = function myself  (nums) {
+            //    var str = ''
+            //    if ($.isArray(nums)) {
+            //        //If this is an array we will have to format it approriately
+            //
+            //    } else {
+            //
+            //    }
+            //}
+            $format_number = function myself (num) {
+                try {
+                    if ( $.isArray(num) ) {
+                        for (var i = 0; i < num.length; i++) {
+                            num[i] = myself(num[i])
+                        }
+                    } else {
+                        if (Math.abs(num) > 10000 || (Math.abs(num) < .00001 && num != 0)) {
+                            num = num.toExponential(2)
+                        } else {
+                            num = num.toFixed(2) // 2 decimal places
+                        }
+                    }
+                    return num
+                } catch (e){
+                    $logit(2,'Formating Number',e.name+" has be caught. Message ="+e.message)
+                    return String(num)
+                }
+            }
+
             //Deal with padding zero values so things look sensible because...javascript
             $pad = function (str, max) {
                  str = str.toString();
@@ -274,6 +304,7 @@
             //-----------------------------------------------------
 
             $plottype_sel.on("focus",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var done = $.Deferred()
@@ -300,6 +331,7 @@
 
             //--X,Y and Z Variable Selects 
             $all_var_sel.on("focus",function( e ) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 //Initialize it if it asks for it
                 var myname = $(e.target).attr("name")
@@ -323,12 +355,12 @@
                                                     
                         }
                     });
-                //Remove the initilization tag from the select
-                $(e.target).removeClass("initialize_me")
-                //Set the initializing deferred to resolved once we've 
+                    //Remove the initilization tag from the select
+                    $(e.target).removeClass("initialize_me")
+                    //Set the initializing deferred to resolved once we've 
 
-                //Make sure the current selection is a valid option, otherwise change it and trigger "change"
-                $.when(spawning_options).then(function () {
+                    //Make sure the current selection is a valid option, otherwise change it and trigger "change"
+                    $.when(spawning_options).then(function () {
                         var optionValues = [];
                         $('option',e.target).each(function() {
                             optionValues.push($(this).val());
@@ -336,7 +368,7 @@
                         if ( !$.inArray(selection,optionValues) ) {
                             $cblog(2,e,"Option "+selection+" is not sane, defualting to "+optionValues[0])
                             $(e.target).val(optionValues[0])
-                            $(e.target).triggerHandler("change")
+                            return $(e.target).triggerHandler("change")
                         }
                     }).then($init_sel(myname)).then($selobj[myname]['bounds'].triggerHandler("focus")).done(initializing.resolve)
                     
@@ -350,12 +382,17 @@
 
             //--X, Y, and Z Limit Inputs
             $all_var_bounds.on("focus",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var the_ajax = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
                     success: function(json){
                         var newbounds = json[myname]
-                        var newval = newbounds[0].toFixed(2)+","+newbounds[1].toFixed(2)
+                        if ($.isArray(newbounds[0])) {
+                            //We don't want multiple limits
+                            newbounds = newbounds[newbounds.length-1]
+                        }
+                        var newval = $format_number(newbounds) 
                         if ($(e.target).val() != newval) {
                             $(e.target).val(newval)
                             $(e.target).fadeOut(200).fadeIn(200) 
@@ -370,6 +407,7 @@
 
             //--Date Entry Inputs
             $(".dateinput").on("focus",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 //Use the name attr of the input to decide what field of the datetime object we will get
@@ -393,6 +431,7 @@
 
             //--Latitude, Longitude, Altitude Input Elements
             $(".positioninput").on("focus",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 //Use the name attr of the input to decide what field of the datetime object we will get
@@ -439,11 +478,11 @@
                     
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.attr("multiple","true")
-                    $("xlog_label").show()
+                    $("#xlog_label").show()
                     
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.attr("multiple","true")
-                    $("xlog_label").show()
+                    $("#ylog_label").show()
                     
                     $(".zvar").hide();
                     $zvar_sel.removeAttr("multiple")
@@ -455,15 +494,16 @@
                     
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
-                    $("xlog_label").hide()
+                    $("#xlog_label").hide()
+
                     
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
-                    $("ylog_label").hide()
+                    $("#ylog_label").hide()
 
                     $zvar_sel.addClass("initialize_me")
                     $zvar_sel.removeAttr("multiple")
-                    $("zlog_label").show()
+                    $("#zlog_label").show()
 
                 }
 
@@ -473,22 +513,24 @@
                     
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
-                    $("xlog_label").hide()
+                    $("#xlog_label").hide()
                     
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
-                    $("ylog_label").hide()
+                    $("#ylog_label").hide()
 
                     $zvar_sel.addClass("initialize_me")
                     $zvar_sel.removeAttr("multiple")
-                    $("zlog_label").show()
+                    $("#zlog_label").show()
                         
                 }
                 
+                $all_var_log.prop("checked",false)
                 
                 $.when(plottype_changed).done(function (data) {
+                    
                     $cblog(4,e,"triggering focus from plottype change") 
-                    $.when_all_trigger($all_var_sel,"focus").then(defrd.resolve);
+                    $.when_all_trigger($all_var_log,'change').then($.when_all_trigger($all_var_sel,"focus")).then(defrd.resolve);
                 })
             
                 return defrd.promise() //Return a Deferred so we can see if the callback finished
@@ -579,12 +621,18 @@
                 var temp = newval.split(',') //Try to split up by commas
                 
                 $cblog(4,e,"value of textbox is: "+newval)
-
-                if ( temp.length != 2 ) {
-                    alert("Bounds inputs must have form lowerbound,upperbound")
+                $cblog(4,e,"value of split array is: "+String(temp))
+                
+                if ( temp.length % 2 != 0 || temp.length < 2 ) {
+                    alert("Bounds inputs must have form lowerbound,upperbound,(lowerbound2,upperbound2,... if multiplot)")
                 } else {
                     //Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
-                    putting_bounds = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT"})
+                    putting_bounds = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT",
+                        error: function (e) {
+                            alert("Unable to complete bounds update. Please make sure your bounds were formatted correctly (always include decimal point)")
+                        }
+                    })
+                    
                     return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
                 }
             });
@@ -621,6 +669,7 @@
             
             //---Handle clicking the plot button---
             $('#plotbutton').on('click',function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 //Tell the backend to work through any UI changes and replot
                 var plotting_done = $.Deferred()
@@ -681,6 +730,7 @@
 
             //Drivers inputs that are Ajaxed in
             $("#dynamicdriverdiv").on("click", function (e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var all_done = $.Deferred()
                 $cblog(4,e,"Dynamic drivers click callback. Has init class:"+String($("#dynamicdriverdiv").hasClass('initialize_me')));
@@ -711,8 +761,13 @@
                                 theinputs = theinputs.not(theinput).not(thelabel).not(thebreak)
 
                                 if ( theinput.length==0 ) {
-                                    $cblog(4,e,"Creating new input and label for "+String(key)+": "+String(value))
-                                    theinput = $("<input type='text' class='dynamicinput' size="+String(String(value).length)+">").val(value).attr("name",key).attr("ID",'dynamicinput'+key)
+                                    //Dynamically determine the length of the field
+                                    var field_size = String(value).length
+                                    var valstr = $format_number(value)
+                                    
+                                    if (field_size > 15) { field_size = 15}
+                                    $cblog(4,e,"Creating new input and label for "+String(key)+": "+valstr)
+                                    theinput = $("<input type='text' class='dynamicinput' size="+String(field_size)+">").val(valstr).attr("name",key).attr("ID",'dynamicinput'+key)
                                     //Make a new change callback
                                     theinput.on("change",function(e){
                                         $cblog(5,e,"In callback")
@@ -725,14 +780,15 @@
                                     });
                                     //Make a new focus callback
                                     theinput.on("focus",function(e){
+                                        e.preventDefault();
                                         $cblog(5,e,"In callback")
                                         var myname = $(e.target).attr("name")
                                         var textval = $(e.target).val()
                                         $cblog(4,e,"backend value is "+textval)
                                         var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"drivers","subfield":myname},type: "GET",
                                             success: function (json) {
-                                                $cblog(4,e,"value from backend is "+String(json["drivers"]))
-                                                $(e.target).val(String(json["drivers"]))
+                                                $cblog(4,e,"value from backend is "+$format_number(json["drivers"]))
+                                                $(e.target).val($format_number(json["drivers"]))
                                             }
                                         })
                                         return ajax_done
@@ -846,6 +902,7 @@
 
 
             $("#previous_button").on("click",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 var prevdone = $.Deferred()
                 //Put in the loading sign
@@ -884,6 +941,7 @@
             })
 
             $("#next_button").on("click",function(e) {
+                e.preventDefault();
                 $cblog(5,e,"In callback")
                 //Put in the loading sign
                 var nextdone = $.Deferred()
@@ -933,6 +991,7 @@
 
             //Bind a click handler to the panic button
             $("#restart").on("click",function(e) {
+                e.preventDefault();
                 var response = window.confirm("Really restart the backend? You will lose all your plots for this session!")
                 if (response) {
                     $.ajax({url: "/uihandler", data: {"posttype":"restart"},type: "POST",
@@ -944,7 +1003,7 @@
                 }
             });
                 
-            $("#putstatevar,#putnewval").on("change",function(e) {
+            $("#putnewval").on("change",function(e) {
                 var newstatevar = $("#putstatevar").val()
                 var newvalue = $("#putnewval").val()
                 var dangerous = $.ajax({url: "/uihandler", data: {"statevar":newstatevar,"newval":newvalue},type: "PUT",dataType: "json"})
@@ -1077,6 +1136,7 @@
                     <button ID="plotbutton">replot!</button>
 
                     <div ID="xvar_div" class="panel xvar">
+                        <h2 style="display:inline;" class="var yvar">X:</h2>
                         <select ID="xvar_select" name="xvar" multiple="true" class="var xvar intitialize_me">
                                 <option value="null">Choose a X variable...</option>
                         </select>
@@ -1091,7 +1151,7 @@
                     </div>
                     
                     <div ID="yvar_div" class="panel yvar">
-
+                        <h2 style="display:inline;" class="var yvar">Y:</h2>
                         <select ID="yvar_select" name="yvar" multiple="true" class="var yvar intitialize_me">
                             <option value="null">Choose a Y variable...</option>
                         </select>
@@ -1106,7 +1166,7 @@
                     </div>
                     
                     <div ID="zvar_div" class="panel zvar">
-
+                        <h2 style="display:inline;" class="var zvar">Z:</h2>
                         <select ID="zvar_select" name="zvar" multiple="true" class="var zvar intitialize_me">
                             <option value="null">Choose a color variable...</option>
                         </select>
@@ -1129,7 +1189,7 @@
                         <button ID="next_button"> Next </button>
                         <strong ID="caplabel">Plot Details Available (click plot to hide/show)</strong>
                         <figure ID="plotfig">
-                            <img ID="plotimg" alt="My MSIS plot" src="" width:"750px" title="Click to show/hide plot details"></img>
+                            <img ID="plotimg" alt="My MSIS plot" src="" title="Click to show/hide plot details"></img>
                         </figure>
                         <div ID="capdiv" class="panel">
                             <figcaption ID="plotimg_cap" class="plot_cap"></figcaption>

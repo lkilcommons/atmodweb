@@ -506,12 +506,24 @@ class Synchronizer(object):
 		"""Function which is called whenever the xbounds are changed in the controlstate. Changes limits for next model run"""
 		if not self.is_multi('x') and self.is_position('x'): 
 			self.mr.nextrun.vars.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
-	
+		elif self.is_multi('x') and not isinstance(self.controlstate['xbounds'][0],list):
+			nvars = len(self.controlstate['xvar'])
+			newlst = []
+			for k in range(nvars):
+				newlst.append(self.controlstate['xbounds'])
+			self.controlstate['xbounds'] = newlst
+
 	def ybounds_changed(self):
 		"""Function which is called whenever the ybounds are changed in the controlstate. Changes limits for next model run"""
 		if not self.is_multi('y') and self.is_position('y'): 
 			self.mr.nextrun.vars.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
-
+		elif self.is_multi('y') and not isinstance(self.controlstate['ybounds'][0],list):
+			nvars = len(self.controlstate['yvar'])
+			newlst = []
+			for k in range(nvars):
+				newlst.append(self.controlstate['ybounds'])
+			self.controlstate['ybounds'] = newlst
+			
 	def mapproj_changed(self):
 		"""Map projection type changed"""
 		if self.controlstate['mapproj'] in self.pdh.supported_projections:
@@ -1017,6 +1029,7 @@ class UiHandler(object):
 		and inpus that are dicts (i.e. passed as JS objects)
 		It calls input_sanitize_single to process individual values.
 		"""
+		self.log.debug("Sanitizing %s" % (str(inval)))
 		#Sanitize input
 		if isinstance(inval,list):
 			outval = []
