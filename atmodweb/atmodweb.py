@@ -1221,7 +1221,6 @@ class FakeCanvas(object):
 			for axis in ['top','bottom','left','right']:
 				self.ax.spines[axis].set_linewidth(lw)
 
-
 class AtModWebObj(object):
 	def __init__(self):
 		self.log = logging.getLogger(self.__class__.__name__)
@@ -1238,7 +1237,7 @@ class AtModWebObj(object):
 		self.syncher.refresh(force_full_refresh=True)
 		self.plots = glob.glob(os.path.join(self.rootdir,self.imgreldir,'session_file_*.png')) #List of all plots in the img dir
 		self.replot()
-		
+
 	@cherrypy.expose
 	def restart(self):
 		#A full scale panic restart
@@ -1250,7 +1249,8 @@ class AtModWebObj(object):
 		self.canvas = FakeCanvas(self)
 		self.syncher = Synchronizer(self.canvas,self.uihandler)
 		self.syncher.refresh(force_full_refresh=True)
-		self.replot()		
+		self.replot()
+		return """<html><body>The backend has restarted! Click <a href="/index"> HERE </a> to get back to plotting.</body></html>"""
 
 	def replot(self):
 		#self.canvas.refresh(force_full_refresh=True)
@@ -1273,7 +1273,6 @@ class AtModWebObj(object):
 		self.controlstate() # store the last controlstate as states[-1]
 
 		return relfn, cap
-
 
 if __name__ == '__main__':
 	

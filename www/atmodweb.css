@@ -2,21 +2,21 @@ body {
 	background: #222222
 }
 
-.highlight {
-    -webkit-transition: text-shadow 0.2s linear;
-    -moz-transition: text-shadow 0.2s linear;
-    -ms-transition: text-shadow 0.2s linear;
-    -o-transition: text-shadow 0.2s linear;
-    transition: text-shadow 0.2s linear;
-}
-
-.highlight:hover,.highlight.glow {
-    text-shadow: 0 0 10px red;
+div#titlewrap {
+	width: 95%;
+	float: left;
+	margin: 0 auto;
 }
 
 div#titlepanel {
 
-	width: 95%;
+	width: 65%;
+	float: left;
+}
+
+div#branding_div {
+	width: 25%;
+	float: left;
 }
 
 div#wrap {
@@ -73,6 +73,12 @@ div.panel {
 	background: background: #3D3D7F;
 	float: left; 
 	width: 100%; 
+}
+
+.branding{
+	float: right;
+	display: inline;	
+	max-height: 5em;
 }
 
 input[type="text"]{

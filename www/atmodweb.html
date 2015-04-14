@@ -1073,15 +1073,23 @@
 
     </script>
     <body>
-        <div ID = "titlepanel" class="panel">
-            <h1 class="h1title">Atmospheric Model Web Explorer (AtModWeb)</h1>
+        <div ID = "titlewrap" class="panel">
+            <div ID = "titlepanel">
+                <h1 class="h1title">Atmospheric Model Web Explorer (AtModWeb)</h1>
+            </div>
+            <div ID="branding_div">
+                    <a href='http://ccar.colorado.edu/seda'><img class="branding" alt="SEDA logo" src="www/seda_banner_short_crop.png" ></img></a>
+                    <a href='http:/www.colorado.edu/aerospace/'><img class="branding" alt="CU Aerospace logo" src="www/cu-aero.jpg" ></img></a>
+            </div>
         </div>
+
         <div ID = "loading" class="panel">
             <h2 ID = "loading_message">Loading...please wait</h2>
         </div>
+
         <div ID="wrap">
             <div ID="leftcolumn">
-                
+
                 <div ID="locationpanel" class="panel">
                 <h2 class="h2title">Location</h2>
                     <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br>
@@ -1114,6 +1122,11 @@
                     <label ID='setlabel' class="debug">Send PUT Request<input type="text" name="statevar" class="debug" value="mapproj" ID="putstatevar"><input type="text" name="value" class="debug" value="moll" ID="putnewval"></label>
                     <button ID="restart" class="debug">Restart Backend</button>
                 </div>
+
+                <div ID="low_branding_div" class="branding">
+                        
+                </div>
+                    
 
             </div>
             
@@ -1198,6 +1211,7 @@
                     </div>
                 </div>
             </div>  
+
         </div>
         
     </body>
