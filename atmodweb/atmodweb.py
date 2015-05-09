@@ -1,5 +1,4 @@
 import cherrypy #Python web server
-#import mpld3 #Render a matplotlib figure as a javascript d3 object
 #Main imports
 import numpy as np
 import sys, pdb, textwrap, datetime,os,time, glob, traceback
@@ -638,6 +637,15 @@ class Synchronizer(object):
 		self.mr.nextrun.vars['Latitude'] = float(self.controlstate['lat'])
 		self.mr.nextrun.vars['Longitude'] = float(self.controlstate['lon'])
 		self.mr.nextrun.vars['Altitude'] = float(self.controlstate['alt'])
+
+		#Make sure all position variables have their limits set correctly
+		#before model run so that we end up with the right generated 
+		#grid 
+		if not self.is_multi('x') and self.is_position('x'): 
+				self.mr.nextrun.vars.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
+		if not self.is_multi('y') and self.is_position('y'): 
+				self.mr.nextrun.vars.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
+			
 
 		#Copy out the drivers from the controlstate (only copy those that are exposed via the model's __init__)
 		self.mr.nextrun.drivers['dt'] = self.controlstate['drivers']['dt']

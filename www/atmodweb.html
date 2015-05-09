@@ -204,10 +204,14 @@
                 //$("#latinputlbl").hide()
                 //$("#loninputlbl").hide()
 
-                if (lat_in) { $("#latinputlbl").hide() } else { $("#latinputlbl").show() } 
-                if (lon_in) { $("#loninputlbl").hide() } else { $("#loninputlbl").show() }
-                if (alt_in) { $("#altinputlbl").hide() } else { $("#altinputlbl").show() }
-
+                //if (lat_in) { $("#latinput").attr('disabled',true) } else { $("#latinput").removeAttr('disabled') } 
+                //if (lon_in) { $("#loninput").attr('disabled',true) } else { $("#loninput").removeAttr('disabled') }
+                //if (alt_in) { $("#altinput").attr('disabled',true) } else { $("#altinput").removeAttr('disabled') }
+                if (lat_in) { $("#latinputlbl").hide() } else { $("#latinput").show() } 
+                if (lon_in) { $("#loninputlbl").hide() } else { $("#loninput").show() }
+                if (alt_in) { $("#altinputlbl").hide() } else { $("#altinput").show() }
+    
+                        
                 def.resolve()
                 return def.promise()
             } 
@@ -608,7 +612,18 @@
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var newval = $(e.target).prop("checked")
-                $cblog(4,e,"checked property is: "+String(newval)) 
+                $cblog(4,e,"checked property is: "+String(newval))
+                $('#xlog,#ylog,#zlog').each(function (ind,logsel) {
+                    if ( myname != $(logsel).attr("name")) {
+                         if ( newval === true ) {
+                            $(logsel).attr('disabled','disabled')
+                            $cblog(4,e,"Setting log checkbox "+String($(logsel).attr("name"))+" to disabled")
+                        } else {
+                            $(logsel).removeAttr('disabled')
+                            $cblog(4,e,"Setting log checkbox "+String($(logsel).attr("name"))+" to enabled")
+                        }
+                    } 
+                })
                 return $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
                 
             });
