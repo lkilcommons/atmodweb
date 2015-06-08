@@ -15,6 +15,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 from cherrypy.lib import auth_digest
+from cherrypy._cpdispatch import Dispatcher
 import copy #Dicts must be deepcopied.
 
 #Import the model running code
@@ -875,7 +876,7 @@ class UiHandler(object):
 	The UiHandler processes requests from the browser (i.e. GET, SET, POST)
 	
 	"""
-	exposed = True
+	#exposed = True
 	def __init__(self,amwo):
 		self.log = logging.getLogger(self.__class__.__name__)
 
@@ -898,8 +899,8 @@ class UiHandler(object):
 			outdata = indata
 		return outdata
 
-	@cherrypy.tools.accept(media='text/plain')
-	@cherrypy.tools.json_out()
+	#@cherrypy.tools.accept(media='text/plain')
+	#@cherrypy.tools.json_out()
 	def GET(self, statevar, subfield=None):
 		"""
 		ReST GET request handler (i.e. browser asks backend for information and backend returns informations) 
@@ -949,8 +950,8 @@ class UiHandler(object):
 		retjson[statevar]=self.output_sanitize(retval)
 		return retjson
 
-	@cherrypy.tools.accept(media='text/plain')
-	@cherrypy.tools.json_out()
+	#@cherrypy.tools.accept(media='text/plain')
+	#@cherrypy.tools.json_out()
 	def POST(self, posttype=None):
 		"""
 		ReST POST request handler (i.e. browser tells backend information and backend does something based on that information) 
@@ -1107,8 +1108,8 @@ class UiHandler(object):
 
 		return val
 
-	@cherrypy.tools.json_out()
-	@cherrypy.tools.accept(media='text/plain')
+	#@cherrypy.tools.json_out()
+	#@cherrypy.tools.accept(media='text/plain')
 	def PUT(self,statevar=None,newval=None,subfield=None):
 		"""
 		ReST PUT request handler. Returns JSONified dictionary. 
@@ -1281,6 +1282,40 @@ class AtModWebObj(object):
 		self.controlstate() # store the last controlstate as states[-1]
 
 		return relfn, cap
+
+class MultiUserAtModWebObj(object):
+	""" Thin class to spin up AtModWebObj instances when a request comes in from a new user"""
+	exposed = True
+	def __init__(self):
+		self._amwo = dict() # AtModWeb instances
+
+	def newuserid(self):
+		return random.randind(0,2**31)
+
+	def amwo(self):
+		if 'userid' in cherrypy.request.cookie
+	    	userid = cherrypy.request.cookie['userid']
+	    else:
+	    	userid = self.newuserid()
+	    	cherrypy.response.cookie['userid'] = userid
+	    	self._amwo[userid] = AtModWebObj()
+	    return self._amwo[userid]
+	
+	@cherrypy.tools.accept(media='text/plain')
+	@cherrypy.tools.json_out()
+	def GET(self, statevar, subfield=None):
+		return self.amwo().uihandler.GET(statevar=statevar,subfield=subfield)
+		
+	@cherrypy.tools.json_out()
+	@cherrypy.tools.accept(media='text/plain')
+	def PUT(self,statevar=None,newval=None,subfield=None):
+		return self.amwo().uihandler.PUT(statevar=statevar,newval=newval,subfield=subfield)
+
+	@cherrypy.tools.accept(media='text/plain')
+	@cherrypy.tools.json_out()
+	def POST(self, posttype=None):
+		return self.amwo().uihandler.POST(statevar=statevar,newval=newval,subfield=subfield)
+
 
 if __name__ == '__main__':
 	
