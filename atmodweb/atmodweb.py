@@ -11,6 +11,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib import ticker
 from matplotlib.colors import LogNorm, Normalize
 from collections import OrderedDict
+import random
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -183,7 +184,7 @@ class ControlStateManager(object):
 			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
 			'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
 			'thisplot':None,'thiscaption':None,'mapproj':'moll',
-			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},'drivers_units':{'dt':None}}
+			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},'drivers_units':{'dt':None},'username':'Mysterious Stranger'}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
 								  #the methods are called. Sort of an ad-hoc slots and signals a'la QT
@@ -300,7 +301,7 @@ class ControlStateManager(object):
 					oldeqnew = self.states[-1][key] != self.controlstate[key] 
 				except:
 					self.log.error("Unable to compare this controlstate key %s with last, because compare statement errored" % (key))
-				 	self.log.error("self.states[-1][%s]=i\n%s\nself.controlstate[%s]=\n%s" % (key,str(self.states[-1][key]),key,str(self.controlstate[key])))
+					self.log.error("self.states[-1][%s]=i\n%s\nself.controlstate[%s]=\n%s" % (key,str(self.states[-1][key]),key,str(self.controlstate[key])))
 					return False	
 				return oldeqnew 
 			else:
@@ -1231,11 +1232,10 @@ class FakeCanvas(object):
 				self.ax.spines[axis].set_linewidth(lw)
 
 class AtModWebObj(object):
-	def __init__(self):
+	def __init__(self,parent,userid=None):
 		self.log = logging.getLogger(self.__class__.__name__)
-		self.rootdir = os.environ['ATMODWEB_ROOT_DIR'] 
-		self.imgreldir = 'www'
-		self.docreldir = 'docs'
+		self.parent = parent
+		self.userid = userid
 		self.n_max_plots = 20
 		self.n_total_plots = 0
 		#Start up the rest of the application
@@ -1244,7 +1244,7 @@ class AtModWebObj(object):
 		self.canvas = FakeCanvas(self)
 		self.syncher = Synchronizer(self.canvas,self.uihandler)
 		self.syncher.refresh(force_full_refresh=True)
-		self.plots = glob.glob(os.path.join(self.rootdir,self.imgreldir,'session_file_*.png')) #List of all plots in the img dir
+		self.plots = glob.glob(os.path.join(self.parent.rootdir,self.parent.imgreldir,'amwo_*.png')) #List of all plots in the img dir
 		self.replot()
 
 	@cherrypy.expose
@@ -1263,9 +1263,10 @@ class AtModWebObj(object):
 
 	def replot(self):
 		#self.canvas.refresh(force_full_refresh=True)
-		#Name file with unix epoch
-		relfn = os.path.join(self.imgreldir,'session_file_%d.png' % (int(time.mktime(datetime.datetime.now().timetuple()))))
-		absfn = os.path.join(self.rootdir,relfn)
+		#Name file with unix epoch and userid
+		relfn = os.path.join(self.parent.imgreldir,'amwo_%s_%d.png' % (str(self.userid),
+			int(time.mktime(datetime.datetime.now().timetuple()))))
+		absfn = os.path.join(self.parent.rootdir,relfn)
 		self.canvas.fig.savefig(absfn,dpi=250)
 		#Generate caption
 		cap = self.syncher.caption
@@ -1274,7 +1275,7 @@ class AtModWebObj(object):
 		#Deal with the plot and caption history
 		while len(self.plots) > self.n_max_plots:	
 			tobedeleted = self.plots.pop(0)
-			os.remove(os.path.join(self.rootdir,tobedeleted))
+			os.remove(os.path.join(self.parent.rootdir,tobedeleted))
 			self.log.info("REMOVED old plot %s" % (tobedeleted))
 		self.log.info('Replotted to %s' % (absfn))
 
@@ -1283,46 +1284,78 @@ class AtModWebObj(object):
 
 		return relfn, cap
 
-class MultiUserAtModWebObj(object):
-	""" Thin class to spin up AtModWebObj instances when a request comes in from a new user"""
+class UiDispatcher(object):
+	"""Just dispatches requests to the approriate uihandler as specified by the userid cookie"""
+
 	exposed = True
-	def __init__(self):
-		self._amwo = dict() # AtModWeb instances
 
-	def newuserid(self):
-		return random.randind(0,2**31)
+	def __init__(self,muamwo):
+		self.muamwo = muamwo
 
-	def amwo(self):
-		if 'userid' in cherrypy.request.cookie
-	    	userid = cherrypy.request.cookie['userid']
-	    else:
-	    	userid = self.newuserid()
-	    	cherrypy.response.cookie['userid'] = userid
-	    	self._amwo[userid] = AtModWebObj()
-	    return self._amwo[userid]
-	
+	def get_uihandler(self):
+		return self.muamwo.get_user_amwo().uihandler
+
 	@cherrypy.tools.accept(media='text/plain')
 	@cherrypy.tools.json_out()
 	def GET(self, statevar, subfield=None):
-		return self.amwo().uihandler.GET(statevar=statevar,subfield=subfield)
+		return self.get_uihandler().GET(statevar=statevar,subfield=subfield)
 		
 	@cherrypy.tools.json_out()
 	@cherrypy.tools.accept(media='text/plain')
 	def PUT(self,statevar=None,newval=None,subfield=None):
-		return self.amwo().uihandler.PUT(statevar=statevar,newval=newval,subfield=subfield)
+		return self.get_uihandler().PUT(statevar=statevar,newval=newval,subfield=subfield)
 
 	@cherrypy.tools.accept(media='text/plain')
 	@cherrypy.tools.json_out()
 	def POST(self, posttype=None):
-		return self.amwo().uihandler.POST(statevar=statevar,newval=newval,subfield=subfield)
+		return self.get_uihandler().POST(posttype=posttype)
 
+class MultiUserAtModWebObj(object):
+	""" Thin class to spin up AtModWebObj instances when a request comes in from a new user"""
+	exposed = True
+	def __init__(self):
+		self.log = logging.getLogger(self.__class__.__name__)
+		self._amwo = dict() # AtModWeb instances
+		self._usernames = dict()
+		#Application Location
+		self.uihandler = UiDispatcher(self)
+		self.rootdir = os.environ['ATMODWEB_ROOT_DIR'] 
+		self.imgreldir = 'www'
+		self.docreldir = 'docs'
+
+	def newuserid(self):
+		return str(random.randint(0,2**31))
+
+	def get_user_amwo(self):
+		reqcookie = cherrypy.request.cookie
+		print reqcookie
+		if 'userid' in reqcookie:
+			userid = reqcookie['userid'].value
+			self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
+		else:
+			self.log.info("Request sent to AMWO with no userid cookie, method %s" % (str(cherrypy.request.method)))
+			respcookie = cherrypy.response.cookie
+			respcookie['userid'] = userid
+		if userid not in self._amwo:
+			self._amwo[userid] = AtModWebObj(parent=self,userid=userid)
+			self.log.info("Spun up new AMWO instance with userid %s, there are now %d instances running" % (str(userid),len(self._amwo.keys())))
+		
+		amwo = self._amwo[userid]
+		if userid in self._usernames:
+			if amwo.controlstate['username'] != self._usernames[userid]:
+				if amwo.controlstate['username'] != 'Mysterious Stranger':
+					self.log.warn('Detected username change in controlstate: userid %s, old name %s, new name %s' % (str(userid),
+						str(self._usernames[userid]),str(amwo.controlstate['username'])))
+				self._usernames[userid] = amwo.controlstate['username']
+				self.log.info('Updated username for id %s to %s' % (str(userid),str(amwo.controlstate['username'])))
+		
+		return self._amwo[userid]
+	
 
 if __name__ == '__main__':
-	
+		
 
-	
-
-	webapp = AtModWebObj()
+	webapp = MultiUserAtModWebObj()
 	conf = {
 		 '/': {
 			'tools.sessions.on': True,

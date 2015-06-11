@@ -69,7 +69,7 @@
             $all_var_bounds = $("#xbounds,#ybounds,#zbounds")
             
             //Selector for everything
-            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
+            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput,#username")
 
             //Set up the functions to change controlstates
 
@@ -306,6 +306,22 @@
             //-----------------------------------------------------
             //Handlers which initialize or update UI control values
             //-----------------------------------------------------
+
+            $("#username").on("focus",function(e) {
+                e.preventDefault();
+                $cblog(5,e,"In callback")
+                var myname = $(e.target).attr("name")
+                //Use the name attr of the input to decide what field of the datetime object we will get
+                
+                var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
+                    success: function(json) {
+                        var newval = json[myname]
+                        $cblog(3,e,"Username from backend is: "+json[myname])
+                        $(e.target).val(json[myname])
+                    }
+                })
+                return doneprocessing
+            })
 
             $plottype_sel.on("focus",function(e) {
                 e.preventDefault();
@@ -895,7 +911,7 @@
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Now trigger bounds focus")
                                     //trigger all bounds to refresh
                                     return $.when_all_trigger($all_var_bounds,"focus")
-                            }).then($("#dynamicdriverdiv").triggerHandler("click")).then(
+                            }).then($("#dynamicdriverdiv").triggerHandler("click")).then($("#username").triggerHandler("focus")).then(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
                                 //and update the plot
@@ -1017,6 +1033,22 @@
                     })
                 }
             });
+
+            //Bind a change handler to the username field
+            $("#username").on("change",function(e) {
+                //e.preventDefault();
+                $cblog(5,e,"In callback")
+                var myname = $(e.target).attr("name")
+                var newun = $(e.target).val()
+                //Use the name attr of the input to decide what field of the datetime object we will get
+                
+                var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newun},type: "PUT",dataType:"json",
+                    success: function(json) {
+                        $cblog(3,e,"Username set to: "+newun)
+                    }
+                })
+                return doneprocessing
+            })
                 
             $("#putnewval").on("change",function(e) {
                 var newstatevar = $("#putstatevar").val()
@@ -1105,6 +1137,12 @@
         <div ID="wrap">
             <div ID="leftcolumn">
 
+                <div ID="controlpanel" class="panel">
+                <h2 class="h2title">Controls</h2>
+                    <label ID='usernamelbl'>User:<input ID='username' type="text" name="username" size="16" value="" class="control"></label>
+                    <button ID="restart" class="control" title="Bugs? App frozen? Click here to restart the application.">Restart App</button>
+                </div>
+
                 <div ID="locationpanel" class="panel">
                 <h2 class="h2title">Location</h2>
                     <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br>
@@ -1135,7 +1173,7 @@
                     
                     <h2 class="h2title debug">Debugging</h2>
                     <label ID='setlabel' class="debug">Send PUT Request<input type="text" name="statevar" class="debug" value="mapproj" ID="putstatevar"><input type="text" name="value" class="debug" value="moll" ID="putnewval"></label>
-                    <button ID="restart" class="debug">Restart Backend</button>
+                    
                 </div>
 
                 <div ID="low_branding_div" class="branding">
