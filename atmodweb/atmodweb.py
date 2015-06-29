@@ -1247,19 +1247,6 @@ class AtModWebObj(object):
 		self.plots = glob.glob(os.path.join(self.parent.rootdir,self.parent.imgreldir,'amwo_*.png')) #List of all plots in the img dir
 		self.replot()
 
-	@cherrypy.expose
-	def restart(self):
-		#A full scale panic restart
-		#Just reinitalize all the things
-		self.log.warn("---RESTARTING THE BACKEND. EXPIRING ALL SESSIONS---")
-		cherrypy.lib.sessions.expire()
-		self.uihandler = UiHandler(self)
-		self.controlstate = self.uihandler.controlstate
-		self.canvas = FakeCanvas(self)
-		self.syncher = Synchronizer(self.canvas,self.uihandler)
-		self.syncher.refresh(force_full_refresh=True)
-		self.replot()
-		return """<html><body>The backend has restarted! Click <a href="/index"> HERE </a> to get back to plotting.</body></html>"""
 
 	def replot(self):
 		#self.canvas.refresh(force_full_refresh=True)
@@ -1283,6 +1270,19 @@ class AtModWebObj(object):
 		self.controlstate() # store the last controlstate as states[-1]
 
 		return relfn, cap
+
+	def restart(self):
+		#A full scale panic restart
+		#Just reinitalize all the things
+		self.log.warn("---RESTARTING THE BACKEND---")
+		#cherrypy.lib.sessions.expire()
+		self.uihandler = UiHandler(self)
+		self.controlstate = self.uihandler.controlstate
+		self.canvas = FakeCanvas(self)
+		self.syncher = Synchronizer(self.canvas,self.uihandler)
+		self.syncher.refresh(force_full_refresh=True)
+		self.replot()
+		
 
 class UiDispatcher(object):
 	"""Just dispatches requests to the approriate uihandler as specified by the userid cookie"""
@@ -1312,7 +1312,6 @@ class UiDispatcher(object):
 
 class MultiUserAtModWebObj(object):
 	""" Thin class to spin up AtModWebObj instances when a request comes in from a new user"""
-	exposed = True
 	def __init__(self):
 		self.log = logging.getLogger(self.__class__.__name__)
 		self._amwo = dict() # AtModWeb instances
@@ -1323,12 +1322,17 @@ class MultiUserAtModWebObj(object):
 		self.imgreldir = 'www'
 		self.docreldir = 'docs'
 
+	@cherrypy.expose
+	def restart(self):
+		self.get_user_amwo().restart()
+		return """<html>Restarting done. </html>"""
+
 	def newuserid(self):
 		return str(random.randint(0,2**31))
 
 	def get_user_amwo(self):
 		reqcookie = cherrypy.request.cookie
-		print reqcookie
+		#print reqcookie
 		if 'userid' in reqcookie:
 			userid = reqcookie['userid'].value
 			self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
@@ -1344,11 +1348,14 @@ class MultiUserAtModWebObj(object):
 		if userid in self._usernames:
 			if amwo.controlstate['username'] != self._usernames[userid]:
 				if amwo.controlstate['username'] != 'Mysterious Stranger':
-					self.log.warn('Detected username change in controlstate: userid %s, old name %s, new name %s' % (str(userid),
-						str(self._usernames[userid]),str(amwo.controlstate['username'])))
+					self.log.warn('Detected username change in controlstate: userid %s, new name %s' % (str(userid),
+						str(amwo.controlstate['username'])))
 				self._usernames[userid] = amwo.controlstate['username']
 				self.log.info('Updated username for id %s to %s' % (str(userid),str(amwo.controlstate['username'])))
-		
+		else:
+			self._usernames[userid]=amwo.controlstate['username']
+		self.log.debug("Username for id %s is %s" % (str(userid),str(self._usernames[userid])))
+
 		return self._amwo[userid]
 	
 
