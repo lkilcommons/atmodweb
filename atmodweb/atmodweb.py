@@ -184,7 +184,8 @@ class ControlStateManager(object):
 			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
 			'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
 			'thisplot':None,'thiscaption':None,'mapproj':'moll',
-			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},'drivers_units':{'dt':None},'username':'Mysterious Stranger'}
+			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},
+			'drivers_units':{'dt':None},'drivers_ranges':{'dt':[datetime.datetime(1970,1,1),datetime.datetime(2012,12,31,23,59,59)]}}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
 								  #the methods are called. Sort of an ad-hoc slots and signals a'la QT
@@ -441,6 +442,7 @@ class Synchronizer(object):
 		for key in self.controlstate['datetime']:
 			self.controlstate['datetime'][key] = getattr(self.mr.runs[-1].drivers['dt'],key)
 		self.controlstate['drivers_units']=copy.deepcopy(self.mr.runs[-1].drivers.units)
+		self.controlstate['drivers_ranges']=copy.deepcopy(self.mr.runs[-1].drivers.allowed_range)
 
 	def autoscale(self):
 		"""Updates the xbounds,ybounds and zbounds in the controlstate from the lims dictionary in last model run"""
@@ -469,7 +471,6 @@ class Synchronizer(object):
 			if subfield == 'dt':
 				for f in self.controlstate['datetime']:
 					self.controlstate['datetime'][f] = getattr(self.controlstate['drivers']['dt'],f)
-		
 
 	def datetime_changed(self,subfield=None):
 		"""Process a change in controlstate['datetime'] dict by setting controlstate['drivers']['dt']"""
@@ -1295,10 +1296,20 @@ class UiDispatcher(object):
 	def get_uihandler(self):
 		return self.muamwo.get_user_amwo().uihandler
 
+	def get_amwo(self):
+		return self.muamwo.get_user_amwo()
+
 	@cherrypy.tools.accept(media='text/plain')
 	@cherrypy.tools.json_out()
 	def GET(self, statevar, subfield=None):
-		return self.get_uihandler().GET(statevar=statevar,subfield=subfield)
+		if statevar == 'username':
+			uid = self.muamwo.get_userid()
+			if uid is not None:
+				return {'username':self.muamwo._usernames[uid]}
+			else:
+				return {'username':'null'}
+		else:
+			return self.get_uihandler().GET(statevar=statevar,subfield=subfield)
 		
 	@cherrypy.tools.json_out()
 	@cherrypy.tools.accept(media='text/plain')
@@ -1308,7 +1319,21 @@ class UiDispatcher(object):
 	@cherrypy.tools.accept(media='text/plain')
 	@cherrypy.tools.json_out()
 	def POST(self, posttype=None):
-		return self.get_uihandler().POST(posttype=posttype)
+		if 'authenticate_' in posttype:
+			un = posttype.split('authenticate_')[-1] # Anything after is username
+			userid = self.muamwo.newuserid()
+			self.muamwo._usernames[userid] = un
+			respcookie = cherrypy.response.cookie
+			respcookie['userid'] = userid
+			return {posttype:'true'}
+		elif 'logout' == 'posttype':
+			del(self.muamwo._usernames[self.muamwo.get_userid()])
+			respcookie['userid']['max_age']=0
+			respcookie['userid']['expires']=0
+			return {'logout':'true'}
+		else: #Push on to appropriate handler
+			return self.get_uihandler().POST(posttype=posttype)
+	
 
 class MultiUserAtModWebObj(object):
 	""" Thin class to spin up AtModWebObj instances when a request comes in from a new user"""
@@ -1327,51 +1352,71 @@ class MultiUserAtModWebObj(object):
 		self.get_user_amwo().restart()
 		return """<html>Restarting done. </html>"""
 
+
+	#Authorization tool
+	def check_auth(self,*args, **kwargs):
+		"""A tool that looks for a userid cookie, and makes sure that the cookie has an entry in the _usernames"""
+		reqcookie = cherrypy.request.cookie
+		if 'userid' not in reqcookie:
+			userid = self.newuserid() #Create a new userid and assign it to the user
+			self._usernames[userid] = '--pending--'
+			respcookie = cherrypy.response.cookie
+			respcookie['userid'] = userid
+			raise cherrypy.HTTPRedirect("/login")
+		else:
+			userid = reqcookie['userid'].value
+			if userid not in self._usernames:
+				self._usernames[userid] = '--pending--'
+				raise cherrypy.HTTPRedirect("/login")
+
 	def newuserid(self):
 		return str(random.randint(0,2**31))
 
-	def get_user_amwo(self):
+	def get_userid(self):
 		reqcookie = cherrypy.request.cookie
-		#print reqcookie
-		if 'userid' in reqcookie:
-			userid = reqcookie['userid'].value
-			self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
-		else:
-			self.log.info("Request sent to AMWO with no userid cookie, method %s" % (str(cherrypy.request.method)))
-			respcookie = cherrypy.response.cookie
-			respcookie['userid'] = userid
+		
+		#Safety checks
+		if 'userid' not in reqcookie:
+			return None
+		
+		userid = reqcookie['userid'].value
+		if userid not in self._usernames or self._usernames[userid]=='--pending--':
+			return None
+
+		self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
+
 		if userid not in self._amwo:
 			self._amwo[userid] = AtModWebObj(parent=self,userid=userid)
 			self.log.info("Spun up new AMWO instance with userid %s, there are now %d instances running" % (str(userid),len(self._amwo.keys())))
 		
-		amwo = self._amwo[userid]
-		if userid in self._usernames:
-			if amwo.controlstate['username'] != self._usernames[userid]:
-				if amwo.controlstate['username'] != 'Mysterious Stranger':
-					self.log.warn('Detected username change in controlstate: userid %s, new name %s' % (str(userid),
-						str(amwo.controlstate['username'])))
-				self._usernames[userid] = amwo.controlstate['username']
-				self.log.info('Updated username for id %s to %s' % (str(userid),str(amwo.controlstate['username'])))
-		else:
-			self._usernames[userid]=amwo.controlstate['username']
 		self.log.debug("Username for id %s is %s" % (str(userid),str(self._usernames[userid])))
+		return userid
 
+	def get_user_amwo(self):
+		userid = self.get_userid()	
 		return self._amwo[userid]
-	
+
+
 
 if __name__ == '__main__':
 		
 
 	webapp = MultiUserAtModWebObj()
+	cherrypy.tools.auth = cherrypy.Tool('before_handler', webapp.check_auth)
 	conf = {
 		 '/': {
 			'tools.sessions.on': True,
 			#'tools.sessions.storage_type':"memcached",
-			'tools.sessions.locking':'implicit'
+			'tools.sessions.locking':'implicit',
+			'tools.auth.on': True
 		 },
 		 '/index': {
 			'tools.staticfile.on':True,
 			'tools.staticfile.filename': os.path.join(os.path.abspath(webapp.rootdir),'www','atmodweb.html')
+		 },
+		 '/login': {
+			'tools.staticfile.on':True,
+			'tools.staticfile.filename': os.path.join(os.path.abspath(webapp.rootdir),'www','login.html')
 		 },
 		 '/uihandler': {
 			 'request.dispatch': cherrypy.dispatch.MethodDispatcher(),

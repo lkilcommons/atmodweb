@@ -69,7 +69,7 @@
             $all_var_bounds = $("#xbounds,#ybounds,#zbounds")
             
             //Selector for everything
-            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput,#username")
+            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
 
             //Set up the functions to change controlstates
 
@@ -307,21 +307,32 @@
             //Handlers which initialize or update UI control values
             //-----------------------------------------------------
 
-            $("#username").on("focus",function(e) {
-                e.preventDefault();
-                $cblog(5,e,"In callback")
-                var myname = $(e.target).attr("name")
-                //Use the name attr of the input to decide what field of the datetime object we will get
-                
-                var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
-                    success: function(json) {
-                        var newval = json[myname]
-                        $cblog(3,e,"Username from backend is: "+json[myname])
-                        $(e.target).val(json[myname])
+            //$("#username").on("focus",function(e) {
+            //    e.preventDefault();
+            //    $cblog(5,e,"In callback")
+            //    var myname = $(e.target).attr("name")
+            //    //Use the name attr of the input to decide what field of the datetime object we will get
+            //    
+            //    var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
+            //        success: function(json) {
+            //            var newval = json[myname]
+            //            $cblog(3,e,"Username from backend is: "+json[myname])
+            //            $(e.target).val(json[myname])
+            //        }
+            //    })
+            //    return doneprocessing
+            //})
+            //Get username
+            $.ajax({url: "/uihandler",data: {"statevar":"username"},type: "GET",dataType:"json",
+                    success : function (json) {
+                        var un = json["username"]
+                        if ( un ) {
+                            $("#username").text(un)
+                        } else {
+                            window.location.replace('/login')
+                        }  
                     }
                 })
-                return doneprocessing
-            })
 
             $plottype_sel.on("focus",function(e) {
                 e.preventDefault();
@@ -911,7 +922,7 @@
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Now trigger bounds focus")
                                     //trigger all bounds to refresh
                                     return $.when_all_trigger($all_var_bounds,"focus")
-                            }).then($("#dynamicdriverdiv").triggerHandler("click")).then($("#username").triggerHandler("focus")).then(
+                            }).then($("#dynamicdriverdiv").triggerHandler("click")).then(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
                                 //and update the plot
@@ -1034,21 +1045,44 @@
                 }
             });
 
+            //Bind a click handler to the logout button
+            $("#logout").on("click",function(e) {
+                e.preventDefault();
+                var response = window.confirm("Really log out? You will lose all your plots for this session!")
+                if (response) {
+                    $.ajax({url: "/uihandler", data: {"posttype":"logout"},type: "POST",
+                        success: function (f) {
+                          
+                                window.location.replace("/login")
+                        }
+                    })
+                }
+            });
+
             //Bind a change handler to the username field
-            $("#username").on("change",function(e) {
+            //$("#username").on("change",function(e) {
                 //e.preventDefault();
-                $cblog(5,e,"In callback")
-                var myname = $(e.target).attr("name")
-                var newun = $(e.target).val()
-                //Use the name attr of the input to decide what field of the datetime object we will get
+            //    $cblog(5,e,"In callback")
+            //    var myname = $(e.target).attr("name")
+            //     var newun = $(e.target).val()
+            //     //Use the name attr of the input to decide what field of the datetime object we will get
                 
-                var doneprocessing = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newun},type: "PUT",dataType:"json",
-                    success: function(json) {
-                        $cblog(3,e,"Username set to: "+newun)
-                    }
-                })
-                return doneprocessing
-            })
+            //     var donesetting = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newun},type: "PUT",dataType:"json",
+            //         success: function(json) {
+            //             $cblog(3,e,"Username set to: "+newun)
+            //         }
+            //     })
+
+            //     var doneprocessing = $.when(donesetting).then(
+            //         $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",dataType:"json",
+            //             success: function(json) {
+            //                 $cblog(3,e,"Username read is:"+json[myname])
+            //                 alert("Welcome to AtModWeb, "+String(json[myname]))
+            //             } 
+            //         })
+            //     )
+            //     return doneprocessing
+            // })
                 
             $("#putnewval").on("change",function(e) {
                 var newstatevar = $("#putstatevar").val()
@@ -1139,8 +1173,9 @@
 
                 <div ID="controlpanel" class="panel">
                 <h2 class="h2title">Controls</h2>
-                    <label ID='usernamelbl'>User:<input ID='username' type="text" name="username" size="16" value="" class="control"></label>
+                    <p> Logged in as: <span ID="username"></span><a href="/login"> (Not you?) </a></p>
                     <button ID="restart" class="control" title="Bugs? App frozen? Click here to restart the application.">Restart App</button>
+                    <button ID="logout" class="control" title="Click here to log out of the application">Log Out</button>
                 </div>
 
                 <div ID="locationpanel" class="panel">

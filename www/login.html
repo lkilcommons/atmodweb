@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="utf-8" />
+	<link href="www/atmodweb.css" rel="stylesheet" type="text/css">
+	<title>AtModWeb Login</title>
+	</head>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script>
+	$(document).ready(function(){
+		$('#username_button').on("click",function(e){
+			var un = $('#username_input').val()
+			
+			if (un.length === 0) {
+				e.preventDefault(); //Prevent the form being submitted
+				alert("Please enter a username!")
+			} else {
+				var doingthething = $.ajax({url: "/uihandler",data: {"posttype":"authenticate_"+String(un)},type: "POST",dataType:"json",
+					success : function (json) {
+						alert("Succesfully logged in as "+String(un)+"!")
+						window.location.replace('/index')
+					}
+				})
+			}
+		})
+	})
+	</script>
+	<body>
+	    <div ID = "titlewrap" class="panel">
+	        <div ID = "titlepanel">
+	            <h1 class="h1title">Atmospheric Model Web Explorer (AtModWeb)</h1>
+	        </div>
+	        <div ID="branding_div">
+	                <a href='http://ccar.colorado.edu/seda'><img class="branding" alt="SEDA logo" src="www/seda_banner_short_crop.png" ></img></a>
+	                <a href='http:/www.colorado.edu/aerospace/'><img class="branding" alt="CU Aerospace logo" src="www/cu-aero.jpg" ></img></a>
+	        </div>
+	    </div>
+
+	    <div ID = "login" class="panel">
+	        <h2 ID = "greeting">Hi, and welcome to AtModweb</h2>
+	        <p> To use atmodweb, you will need to provide a username. This way, I'll be able to keep track of your plots, and keep them seperate from those of other people who might be using this website. You won't need a password, and I'll remember what you've plotted for about an hour. If you want to keep your plots for longer than that, please right-click and save them, otherwise, they may not be here when you get back!
+	        </p>
+    		<label ID = 'username_label'>Username:
+	        	<input ID = 'username_input' type='text' name='username'> 
+	        </label> 
+	        <button ID = 'username_button' name='username_button' title="Go to atmodweb">Go!</button>
+	    </div>
+    </body>
+</html>
