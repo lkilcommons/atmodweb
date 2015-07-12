@@ -1,7 +1,7 @@
 import cherrypy #Python web server
 #Main imports
 import numpy as np
-import sys, pdb, textwrap, datetime,os,time, glob, traceback
+import sys, pdb, textwrap, datetime,os,time, glob, traceback, time
 import socket #to figure out our hostname
 import matplotlib as mpl
 mpl.use('Agg')
@@ -1237,6 +1237,8 @@ class AtModWebObj(object):
 		self.log = logging.getLogger(self.__class__.__name__)
 		self.parent = parent
 		self.userid = userid
+		self.time_created = datetime.datetime.now()
+		self.last_accessed = datetime.datetime.now()
 		self.n_max_plots = 20
 		self.n_total_plots = 0
 		#Start up the rest of the application
@@ -1327,9 +1329,7 @@ class UiDispatcher(object):
 			respcookie['userid'] = userid
 			return {posttype:'true'}
 		elif 'logout' == 'posttype':
-			del(self.muamwo._usernames[self.muamwo.get_userid()])
-			respcookie['userid']['max_age']=0
-			respcookie['userid']['expires']=0
+			self.muamwo.logout()
 			return {'logout':'true'}
 		else: #Push on to appropriate handler
 			return self.get_uihandler().POST(posttype=posttype)
@@ -1352,6 +1352,19 @@ class MultiUserAtModWebObj(object):
 		self.get_user_amwo().restart()
 		return """<html>Restarting done. </html>"""
 
+	@cherrypy.expose
+	def console(self):
+		uid = self.get_userid()
+		retstr = "<html><body>"
+		if uid is not None and self._usernames[uid].lower() == 'liam':
+			retstr += "<h1> Currently running amwo instances: </h1>" 
+			retstr += "<ul>"
+			for key in self._amwo:
+				retstr += "<li>%s: created at %s by %s</li>" % (key,self._amwo[key].time_created.strftime("%c"),
+					str(self._usernames[key]) if key in self._usernames else 'DEFUNCT USER')
+			retstr += '</ul>' 
+		retstr += "</body></html>"
+		return retstr
 
 	#Authorization tool
 	def check_auth(self,*args, **kwargs):
@@ -1368,6 +1381,14 @@ class MultiUserAtModWebObj(object):
 			if userid not in self._usernames:
 				self._usernames[userid] = '--pending--'
 				raise cherrypy.HTTPRedirect("/login")
+
+	def logout(self):
+		uid = self.muamwo.get_userid()
+		del(self._usernames[uid])
+		del(self._amwo[uid])
+		respcookie = cherrypy.response.cookie
+		respcookie['userid']['max_age']=0
+		respcookie['userid']['expires']=time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(time.time()))
 
 	def newuserid(self):
 		return str(random.randint(0,2**31))

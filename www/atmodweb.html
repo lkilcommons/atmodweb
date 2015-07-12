@@ -326,7 +326,7 @@
             $.ajax({url: "/uihandler",data: {"statevar":"username"},type: "GET",dataType:"json",
                     success : function (json) {
                         var un = json["username"]
-                        if ( un ) {
+                        if ( un.length > 0 ) {
                             $("#username").text(un)
                         } else {
                             window.location.replace('/login')
