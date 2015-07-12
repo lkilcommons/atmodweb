@@ -1307,7 +1307,7 @@ class UiDispatcher(object):
 			if uid is not None:
 				return {'username':self.muamwo._usernames[uid]}
 			else:
-				return {'username':'null'}
+				return {'username':''}
 		else:
 			return self.get_uihandler().GET(statevar=statevar,subfield=subfield)
 		
@@ -1393,9 +1393,11 @@ class MultiUserAtModWebObj(object):
 		return userid
 
 	def get_user_amwo(self):
-		userid = self.get_userid()	
-		return self._amwo[userid]
-
+		userid = self.get_userid()
+		if userid is not None:
+			return self._amwo[userid]
+		else:
+			raise cherrpy.HTTPRedirect('/login')
 
 
 if __name__ == '__main__':
