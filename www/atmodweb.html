@@ -97,6 +97,8 @@
                 $("#loading").fadeOut(500)   
             }
 
+            
+
             //Make a debugging console log printing thing to put in ajax error
             $generic_error_func = function (jqxhr,status,error) {
                 if (debug) {console.log("Ajax failed: Server says: "+jqxhr.responseText)};
@@ -323,6 +325,7 @@
             //    })
             //    return doneprocessing
             //})
+
             //Get username
             $.ajax({url: "/uihandler",data: {"statevar":"username"},type: "GET",dataType:"json",
                     success : function (json) {
@@ -508,10 +511,12 @@
                     
                     //Trigger the xvar, yvar to populate
                     
+                    $(".xvar").show()  
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.attr("multiple","true")
                     $("#xlog_label").show()
                     
+                    $(".yvar").show()  
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.attr("multiple","true")
                     $("#ylog_label").show()
@@ -524,11 +529,12 @@
                 {
                     $(".zvar").show()
                     
+                    $(".xvar").show()                    
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
                     $("#xlog_label").hide()
 
-                    
+                    $(".yvar").show()
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
                     $("#ylog_label").hide()
@@ -546,11 +552,13 @@
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
                     $("#xlog_label").hide()
+                    $(".xvar").hide()
                     
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
                     $("#ylog_label").hide()
-
+                    $(".yvar").hide()
+                    
                     $zvar_sel.addClass("initialize_me")
                     $zvar_sel.removeAttr("multiple")
                     $("#zlog_label").show()
@@ -677,6 +685,7 @@
                     })
                     
                     return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
+                    //return putting_bounds
                 }
             });
 
@@ -691,6 +700,7 @@
                 var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname,"newval":parseInt(newval)},type: "PUT"})
                 var plotting = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
                 return plotting
+                //return ajax_done
             });
 
             //--Position Change Inputs
@@ -707,6 +717,7 @@
                 var autoscale_done = $.ajax({url: "/uihandler",data: {"posttype":"autoscale"},type: "POST"})
                 var plotting = $.when(ajax_done,autoscale_done).then($("#plotbutton").triggerHandler("click"))
                 return plotting
+                //return $.when(ajax_done).then(autoscale_done)
             });
 
             
@@ -808,13 +819,12 @@
                 return ddcd
             }
 
-            $updated3chart = function () {
-                //Updates the d3 chart
+            $updated3chart = function (ddcd) {
                 var thedef = $.Deferred()
 
                 var thechart = d3.select(".chart")
                     .selectAll("div")
-                    .data($dynamicdriverchartdata)
+                    .data(ddcd)
                 var color = d3.scale.linear()
                             .domain([0,.5, 1])
                             .range(["seagreen","orange", "red"]);
@@ -840,6 +850,7 @@
                         .remove()
 
                 thedef.resolve()
+
                 return thedef.promise()
             }
 
@@ -906,6 +917,7 @@
                                         var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"drivers","subfield":myname,"newval":textval},type: "PUT"})
                                         var plotting_done = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
                                         return plotting_done
+                                        //return ajax_done
                                     });
                                     
                                     //Make a new focus callback
@@ -984,7 +996,7 @@
                         }
                     }));
 
-                    var updating_data = $.when(getting_units).then(
+                    var updating_data = $.when(getting_drivers,getting_units,getting_desciptions).then(
                         $.ajax({url: "/uihandler",data: {"statevar":"drivers_ranges"},type:"GET",
                         success: function(json){
                             $cblog(4,e,"Before: "+String($dynamicdriverchartdata));
@@ -1026,8 +1038,8 @@
                             // Update the chart
                             $cblog(4,e,"After: "+String($dynamicdriverchartdata));
                             
-                            $updated3chart()
-            
+                            $updated3chart($dynamicdriverchartdata)
+
                         } //end of success function
                     })); //end of the ajax                    
 
@@ -1217,6 +1229,23 @@
                 }
             });
 
+            //Implement mutual exclusivity of drivers and dates
+            $("#manualpanel").on("click", function (e){
+                $("#manualpanel_title").text("Manual Driver Entry")
+                $("#manualpanel_controls").slideDown()
+                $("#datepanel_title").text("Click to Look Up Solar Activity By Date")
+                $("#datepanel_controls").slideUp()
+                $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"False"},type: "PUT"})
+            })
+
+            $("#datepanel").on("click", function (e){
+                $("#manualpanel_title").text("Click to Specify Solar Activity Manually")
+                $("#manualpanel_controls").slideUp()
+                $("#datepanel_title").text("Date and Time")
+                $("#datepanel_controls").slideDown()
+                $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"True"},type: "PUT"})
+            })
+
             //Bind a change handler to the username field
             //$("#username").on("change",function(e) {
                 //e.preventDefault();
@@ -1336,6 +1365,8 @@
                     <button ID="logout" class="control" title="Click here to log out of the application">Log Out</button>
                 </div>
 
+                
+
                 <div ID="locationpanel" class="panel">
                 <h2 class="h2title">Location</h2>
                     <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br>
@@ -1344,21 +1375,24 @@
                 </div>
 
                 <div ID="datepanel" class="panel">
-                    <h2 class="h2title">Date and Time</h2>
-		    <p>Entering a date will also look up the drivers for that date</p>
-                    <p>Year-Month-Day Hour:Minute</p>
-                    <input type="text" name="year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
-                    <input type="text" name="month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
-                    <input type="text" name="day" value="21" size="2" class="dateinput"><span>  </span>
-                    <input type="text" name="hour" value="12" size="2" class="dateinput"><span><strong>:</strong></span>
-                    <input type="text" name="minute" value="00" size="2" class="dateinput">             
+                    <h2 ID="datepanel_title" class="h2title">Date and Time</h2>
+                    <div ID="datepanel_controls">
+                        <p>Year-Month-Day Hour:Minute</p>
+                        <input type="text" name="year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
+                        <input type="text" name="month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
+                        <input type="text" name="day" value="21" size="2" class="dateinput"><span>  </span>
+                        <input type="text" name="hour" value="12" size="2" class="dateinput"><span><strong>:</strong></span>
+                        <input type="text" name="minute" value="00" size="2" class="dateinput">
+                    </div>            
                 </div>
                 
                 
                 <div ID="manualpanel" class="panel">
-                    <h2 class="h2title">Manual Driver Entry</h2>
-                    <div ID="dynamicdriverdiv" class="initialize_me">
+                    <h2 ID="manualpanel_title" class="h2title">Manual Driver Entry</h2>
+                    <div ID="manualpanel_controls">
+                        <div ID="dynamicdriverdiv" class="initialize_me">
 
+                        </div>
                     </div>
                 </div>
 
@@ -1378,22 +1412,25 @@
             </div>
             
             <div ID="rightcolumn">
-                <div ID="mainpanel" class="panel">
+                <div ID="plotoptions" class="panel">
+
                     <h2 class="h2title">Plot Options</h2>
-                    
+
                     <select ID="model_select" name="modelname" class="model">
                         <option value="msis">NRLMSISE00</option>
                         <option value="hwm">HWM07</option>
                     </select>
 
-                    <select ID="plottype_select" name="plottype" class="plottype">
-                        <option value="null">Choose a plot type...</option>
-                        <option value="line">Line Plot</option>
-                        <option value="pcolor">Heatmap/Pseudocolor</option>
-                        <option value="map">Map</option>
-                    </select>
+                    <label> Type of plot: 
+                        <select ID="plottype_select" name="plottype" class="plottype">
+                            <option value="null">Choose a plot type...</option>
+                            <option value="line">Line Plot</option>
+                            <option value="pcolor">Heatmap/Pseudocolor</option>
+                            <option value="map">Map</option>
+                        </select>
+                    </label>
 
-                    <button ID="plotbutton">replot!</button>
+                    <button ID="plotbutton">PLOT</button>
 
                     <div ID="xvar_div" class="panel xvar">
                         <h2 style="display:inline;" class="var yvar">X:</h2>
@@ -1401,11 +1438,11 @@
                                 <option value="null">Choose a X variable...</option>
                         </select>
 
-                        <label ID="xlog_label" class="xvar">Logscale X:                 
+                        <label ID="xlog_label" class="xvar">Logscale:                 
                             <input ID="xlog" type="checkbox" name="xlog" class="var xvar log">
                         </label>
 
-                        <label ID="xbounds_label" class="xvar">X-axis Limits:                   
+                        <label ID="xbounds_label" class="xvar">Limits:                   
                             <input ID="xbounds" type="text" name="xbounds" class="var xvar bounds">
                         </label>
                     </div>
@@ -1416,38 +1453,38 @@
                             <option value="null">Choose a Y variable...</option>
                         </select>
                         
-                        <label ID="ylog_label" class="yvar">Logscale Y:             
+                        <label ID="ylog_label" class="yvar">Logscale:             
                             <input ID="ylog" type="checkbox" name="ylog" class="var yvar log">
                         </label>
 
-                        <label ID="ybounds_label" class="yvar">Y-axis Limits:                   
+                        <label ID="ybounds_label" class="yvar">Limits:                   
                             <input ID="ybounds" type="text" name="ybounds" class="var yvar bounds">
                         </label>
                     </div>
                     
                     <div ID="zvar_div" class="panel zvar">
-                        <h2 style="display:inline;" class="var zvar">Z:</h2>
+                        <h2 style="display:inline;" class="var zvar">Color:</h2>
                         <select ID="zvar_select" name="zvar" multiple="true" class="var zvar intitialize_me">
                             <option value="null">Choose a color variable...</option>
                         </select>
 
-                        <label ID="zvar_label" class="zvar">Logscale Z:             
+                        <label ID="zvar_label" class="zvar">Logscale:             
                             <input ID="zlog" type="checkbox" name="zlog" class="var zvar log">
                         </label>
 
-                        <label ID="zbounds_label" class="zvar">Z-axis Limits:                   
+                        <label ID="zbounds_label" class="zvar">Limits:                   
                             <input ID="zbounds" type="text" name="zbounds" class="var zvar bounds">
                         </label>
 
                     </div>
-
                     
+                </div>
 
-                    <br>
+                <div ID="mainpanel" class="panel">
+
                     <div ID="plotholder" class="plot_container">
                         <button ID="previous_button"> Previous </button>
                         <button ID="next_button"> Next </button>
-                        <strong ID="caplabel">Plot Details Available (click plot to hide/show)</strong>
                         <figure ID="plotfig">
                             <img ID="plotimg" alt="My MSIS plot" src="" title="Click to show/hide plot details"></img>
                         </figure>
@@ -1457,6 +1494,8 @@
                         
                     </div>
                 </div>
+
+                
             </div>  
 
         </div>

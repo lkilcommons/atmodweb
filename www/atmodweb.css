@@ -61,12 +61,30 @@ div.panel {
 	    background: #3D3D3E;
 	    color: #D6D6D6;
 	    float:left;
-	    border: #E18628 solid 3px;
+	    border: #E18628 solid 2px;
 	    border-radius: 10px;
 	    padding: 0.5em;
 	    margin: 0.5em;
 	    width: 90%;
 	    
+}
+
+#plotbutton {
+	background: #E18628;
+	font-size: 100%;
+	border-radius: 4px;
+	border: 2px solid #222222;
+	text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.2);
+	color: white;
+	width: 5em;
+}
+
+#manualpanel_controls{
+	display:none;
+}
+
+.clicked {
+	display: none;
 }
 
 .chart div {
