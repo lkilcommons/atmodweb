@@ -187,7 +187,8 @@ class ControlStateManager(object):
 			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},
 			'drivers_units':{'dt':None},
 			'drivers_ranges':{'dt':[datetime.datetime(1970,1,1),datetime.datetime(2012,12,31,23,59,59)]},
-			'drivers_descriptions':{'dt':'date and time of model run'}}
+			'drivers_descriptions':{'dt':'date and time of model run'},
+			'driver_lookup':True}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
 								  #the methods are called. Sort of an ad-hoc slots and signals a'la QT
@@ -795,7 +796,8 @@ class Synchronizer(object):
 				raise 
 
 			#Then maybe we will want to not look up drivers and just keep using the same ones
-			self.mr() #Trigger storing just created model run as mr.runs[-1]
+			propagate = False if self.controlstate['driver_lookup'] else True
+			self.mr(propagate_drivers=propagate) #Trigger storing just created model run as mr.runs[-1]
 			self.refreshModelRunOptions() #Reset the plotDataHandler, make sure all controlstate options that change with model run are set
 			self.refreshSelectOptions()
 			
