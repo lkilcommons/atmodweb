@@ -770,9 +770,9 @@
             });
 
             // Start with nothing in the array
-            var dynamicdriverchartdata = [];
+            $dynamicdriverchartdata = [];
 
-            var addEUV = function (ddcd) {
+            $addEUV = function (ddcd) {
                 //Takes dynamic driver data and adds estimated EUV
                 var ind107 = ddcd.map(function(x) {return x.name; }).indexOf('f107');
                 var ind107a = ddcd.map(function(x) {return x.name; }).indexOf('f107a');
@@ -808,13 +808,13 @@
                 return ddcd
             }
 
-            var updated3chart = function () {
+            $updated3chart = function () {
                 //Updates the d3 chart
                 var thedef = $.Deferred()
 
                 var thechart = d3.select(".chart")
                     .selectAll("div")
-                    .data(dynamicdriverchartdata)
+                    .data($dynamicdriverchartdata)
                 var color = d3.scale.linear()
                             .domain([0,.5, 1])
                             .range(["seagreen","orange", "red"]);
@@ -858,11 +858,15 @@
                     //Get all the driver inputs/labels/breaks 
                     theinputs = $(".dynamicinput")
                     
+                    var thedrivers = {}
                     var getting_drivers = $.ajax({url: "/uihandler",data: {"statevar":"drivers"},type:"GET",
                         success: function(json){
                             $cblog(4,e,"Now building dynamic drivers list");
                             var bigselector = ''
+                            
                             $.each(json["drivers"], function(key,value) {
+                                thedrivers[key]=value //Save for later
+
                                 if ( key === 'dt' ) {
                                     return true; //Forces jQuery to skip this loop iteration   
                                 }
@@ -983,57 +987,57 @@
                     var updating_data = $.when(getting_units).then(
                         $.ajax({url: "/uihandler",data: {"statevar":"drivers_ranges"},type:"GET",
                         success: function(json){
-                            $cblog(4,e,"Before: "+String(dynamicdriverchartdata));
+                            $cblog(4,e,"Before: "+String($dynamicdriverchartdata));
                             //Use the driver ranges to update the chart data
-                            var names = dynamicdriverchartdata.map(function(x) {return x.name; })                        
+                            var names = $dynamicdriverchartdata.map(function(x) {return x.name; })                        
                             $.each(json['drivers_ranges'], function(key,rangeval){
                                 names = names.filter(function (el) {return el.name !== key}) //Remove element from names matching key
-                                var driverval = Number($("#dynamicinput"+key).val()) //Value of input converted to number
+                                var driverval = Number(thedrivers[key]) //Value of input converted to number
                                 $cblog(5,e,"Driver "+String(key)+"has value "+String(driverval)+"and range "+String(rangeval))
                                 if ( !isNaN(driverval) ) {
                                     //check if we have a value in the array of chart data already
                                     //Find the index of the existing object    
-                                    var ind = dynamicdriverchartdata.map(function(x) {return x.name; }).indexOf(key); 
+                                    var ind = $dynamicdriverchartdata.map(function(x) {return x.name; }).indexOf(key); 
                                     $cblog(5,e,"Driver "+String(key)+" has index "+String(ind))
                                     if ( ind === -1 ) {
                                         // No value with name 'key' exists in array
                                         var newobj = {name:key,value:driverval,min:Number(rangeval[0]),
                                             max:Number(rangeval[1]),units:theunits[key],
                                             desc:thedescriptions[key]};
-                                        dynamicdriverchartdata.push(newobj);
+                                        $dynamicdriverchartdata.push(newobj);
                                     } else {
                                         // Just update existing value
-                                        dynamicdriverchartdata[ind].value = driverval;
-                                        dynamicdriverchartdata[ind].min = Number(rangeval[0]);
-                                        dynamicdriverchartdata[ind].max = Number(rangeval[1]);
-                                        dynamicdriverchartdata[ind].units = theunits[key]
-                                        dynamicdriverchartdata[ind].desc = thedescriptions[key]
+                                        $dynamicdriverchartdata[ind].value = driverval;
+                                        $dynamicdriverchartdata[ind].min = Number(rangeval[0]);
+                                        $dynamicdriverchartdata[ind].max = Number(rangeval[1]);
+                                        $dynamicdriverchartdata[ind].units = theunits[key]
+                                        $dynamicdriverchartdata[ind].desc = thedescriptions[key]
                                     }
 
                                 }
                             });
                             //remove any elements leftover (un-updated) in the data array
                             $.each(names, function (thename) {
-                                dynamicdriverchartdata = dynamicdriverchartdata.filter(function(el) {return el.name !== thename})
+                                $dynamicdriverchartdata = $dynamicdriverchartdata.filter(function(el) {return el.name !== thename})
                             });
                             //Append the EUV flux
-                            dynamicdriverchartdata = addEUV(dynamicdriverchartdata)
+                            $dynamicdriverchartdata = $addEUV($dynamicdriverchartdata)
 
                             // Update the chart
-                            $cblog(4,e,"After: "+String(dynamicdriverchartdata));
-                            updated3chart()
-                                
+                            $cblog(4,e,"After: "+String($dynamicdriverchartdata));
+                            
+                            $updated3chart()
+            
                         } //end of success function
                     })); //end of the ajax                    
 
-                    $.when(updating_data).done(all_done.resolve);
+                    $.when(updating_data).then($updated3chart).done(all_done.resolve);
                 } else {
                     $cblog(4,e,"Drivers not set to reinit, resolving main Deferred")
                     all_done.resolve()
                 }
                 return all_done.promise()
             })
-
 
             //Put a loading image in the plot
             $("#capdiv").slideUp()

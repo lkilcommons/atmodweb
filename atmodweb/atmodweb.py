@@ -794,6 +794,7 @@ class Synchronizer(object):
 				#Continue erroring
 				raise 
 
+			#Then maybe we will want to not look up drivers and just keep using the same ones
 			self.mr() #Trigger storing just created model run as mr.runs[-1]
 			self.refreshModelRunOptions() #Reset the plotDataHandler, make sure all controlstate options that change with model run are set
 			self.refreshSelectOptions()
