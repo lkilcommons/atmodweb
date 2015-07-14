@@ -54,7 +54,7 @@ input {
 	padding: 0.5em;
 	margin: 0.5em;    
 	text-align: center;
-	font-size: 14pt;
+	font-size: 12pt;
 }
 
 div.panel {
@@ -67,6 +67,15 @@ div.panel {
 	    margin: 0.5em;
 	    width: 90%;
 	    
+}
+
+.chart div {
+  font: 10px sans-serif;
+  background-color: steelblue;
+  text-align: right;
+  padding: 3px;
+  margin: 1px;
+  color: white;
 }
 
 .plot_container{

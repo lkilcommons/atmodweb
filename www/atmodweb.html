@@ -6,6 +6,7 @@
     <title>AtModWeb</title>
     </head>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
     <script>
         /*
             The whole ajax example
@@ -768,9 +769,81 @@
                 return plotting_done.promise()
             });
 
+            // Start with nothing in the array
+            var dynamicdriverchartdata = [];
 
+            var addEUV = function (ddcd) {
+                //Takes dynamic driver data and adds estimated EUV
+                var ind107 = ddcd.map(function(x) {return x.name; }).indexOf('f107');
+                var ind107a = ddcd.map(function(x) {return x.name; }).indexOf('f107a');
+                var indeuv = ddcd.map(function(x) {return x.name; }).indexOf('EUV');
+                
+                if ( ind107 !== -1 ) {
+                    //if both are present
+                    var f107 = ddcd[ind107].value
+                    var themin = ddcd[ind107].min
+                    var themax = ddcd[ind107].max
+                    
+                    if ( ind107a !== -1 ){
+                        var f107a = ddcd[ind107a].value;
+                    } else {
+                        var f107a = ddcd[ind107].value;
+                    }
+                    var f102euv = function (f107,f107a) {
+                        return 1.6 + .032*(Number(f107)+Number(f107a))/2
+                    }
+                    var newobj = {name:'EUV',
+                                    min:f102euv(themin,themin).toFixed(3),
+                                    max:f102euv(themax,themax).toFixed(3),
+                                    value:f102euv(f107,f107a).toFixed(3),
+                                    units:"10^14 photon/s/m^2",
+                                    desc:"Estimated Extreme Ultraviolet Photon Flux"}
+                    if ( indeuv === -1 ) {
+                        ddcd.push(newobj)
+                    } else {
+                        ddcd[indeuv] = newobj
+                    }
+                    $cblog(4,'addEUV','Adding EUV flux '+String(newobj.value)+" equiv to F10.7 "+String(f107))
+                }
+                return ddcd
+            }
 
-            //Drivers inputs that are Ajaxed in
+            var updated3chart = function () {
+                //Updates the d3 chart
+                var thedef = $.Deferred()
+
+                var thechart = d3.select(".chart")
+                    .selectAll("div")
+                    .data(dynamicdriverchartdata)
+                var color = d3.scale.linear()
+                            .domain([0,.5, 1])
+                            .range(["seagreen","orange", "red"]);
+                thechart.transition()
+                        .style("width", function(d) { return (d.value-d.min)/(d.max-d.min) * 100 + "%"; })
+                        .style("background-color", function(d) { return color((d.value-d.min)/(d.max-d.min))})
+                        .text(function(d) { return d.name+': '+String(d.value); });
+
+                thechart.enter().append("div")
+                        .style("width", function(d) { return (d.value-d.min)/(d.max-d.min) * 100 + "%"; })
+                        .style("background-color", function(d) { return color((d.value-d.min)/(d.max-d.min))})
+                        .text(function(d) { return d.name+':'+String(d.value); })
+                        .on("mouseover", function(d) {
+                            d3.select(this).style("font-size","14px")
+                                .text(d.desc+"["+String(d.units)+"]: "+String(d.value)+" range: ("+String(d.min)+"-"+String(d.max)+")");
+                        })
+                        .on("mouseout", function(d) {
+                            d3.select(this).style("font-size","10px")
+                                .text(d.name+':'+String(d.value));
+                        });
+                        
+                thechart.exit()
+                        .remove()
+
+                thedef.resolve()
+                return thedef.promise()
+            }
+
+            //--Drivers inputs that are Ajaxed in
             $("#dynamicdriverdiv").on("click", function (e) {
                 e.preventDefault();
                 $cblog(5,e,"In callback")
@@ -781,18 +854,21 @@
                     //make sure the controlstate is up to date. Strictly this isn't nessecary
                     //var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshmodeloptions"},type: "POST"})
                     //$(".dynamicinput").remove()
-                    theinputs = $(".dynamicinput")
 
+                    //Get all the driver inputs/labels/breaks 
+                    theinputs = $(".dynamicinput")
                     
                     var getting_drivers = $.ajax({url: "/uihandler",data: {"statevar":"drivers"},type:"GET",
                         success: function(json){
                             $cblog(4,e,"Now building dynamic drivers list");
                             var bigselector = ''
                             $.each(json["drivers"], function(key,value) {
-                                
+                                if ( key === 'dt' ) {
+                                    return true; //Forces jQuery to skip this loop iteration   
+                                }
                                 $cblog(5,e,"Adding driver "+key+" : "+value)
                                 
-
+                                //Add to selector text that will select everything we're now creating
                                 bigselector = bigselector+"#dynamicinput"+key+' '+"#dynamicinputlabel"+key+' '
 
                                 //If we already have a field, don't overwrite it.
@@ -800,16 +876,23 @@
                                 var thelabel = $("#dynamicinputlabel"+key)
                                 var thebreak = $("#dynamicinputbr"+key)
 
+                                //Everything but the input we are currently working on
                                 theinputs = theinputs.not(theinput).not(thelabel).not(thebreak)
 
+                                //If the input doesn't yet exist
                                 if ( theinput.length==0 ) {
                                     //Dynamically determine the length of the field
                                     var field_size = String(value).length
                                     var valstr = $format_number(value)
-                                    
-                                    if (field_size > 15) { field_size = 15}
+
+                                    //Put a maximum size on the field so we don't get boxes outside the div
+                                    if (field_size > 15) { field_size = 15} 
+
                                     $cblog(4,e,"Creating new input and label for "+String(key)+": "+valstr)
+                                    
+                                    //Create the input
                                     theinput = $("<input type='text' class='dynamicinput' size="+String(field_size)+">").val(valstr).attr("name",key).attr("ID",'dynamicinput'+key)
+
                                     //Make a new change callback
                                     theinput.on("change",function(e){
                                         $cblog(5,e,"In callback")
@@ -820,6 +903,7 @@
                                         var plotting_done = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
                                         return plotting_done
                                     });
+                                    
                                     //Make a new focus callback
                                     theinput.on("focus",function(e){
                                         e.preventDefault();
@@ -836,14 +920,18 @@
                                         return ajax_done
                                     });
                                     
+                                    //Create the label
                                     thelabel = $("<label class='dynamicinput'>").text(key+": ").attr("ID",'dynamicinputlabel'+key)
+                                    //Add the label to the main driver div
                                     $("#dynamicdriverdiv").append(thelabel.append(theinput)) 
+                                    //Add the input to the label
                                     $("#dynamicdriverdiv").append($("<br class='dynamicinput'>").attr("ID",'dynamicinputbr'+key))
 
                                 } else {
                                     //console.log(theinput.val(),value)
                                     if (theinput.val() != value) {
                                         theinput.val(value)
+                                        //Animate the change
                                         theinput.fadeOut(200).fadeIn(200)
                                     }
 
@@ -857,15 +945,18 @@
 
                         } //success function
                     });
+
                     $("#dynamicdriverdiv").removeClass("initialize_me")
                     $driver_reinit = false
 
+                    var theunits = {}
                     var getting_units = $.when(getting_drivers).then($.ajax({url: "/uihandler",data: {"statevar":"drivers_units"},type:"GET",
                         success: function(json){
                             //Put the driver units on the labels
                             $.each(json['drivers_units'],function(key,val){
                                 var oldval = $("#dynamicinputlabel"+key).text()
                                 if (val != null && oldval.indexOf('World') == -1) {
+                                    theunits[key] = val //store for later
                                     $("#dynamicinputlabel"+key).append("<span class='dynamicinput'>["+String(val)+"]</span>")
                                 }
                             })
@@ -873,13 +964,76 @@
                         }
                     }));
 
-                    $.when(getting_units).done(all_done.resolve)
+                    var thedescriptions = {}
+                    var getting_desciptions = $.when(getting_drivers).then($.ajax({url: "/uihandler",
+                        data: {"statevar":"drivers_descriptions"},type:"GET",
+                        success: function(json){
+                            //Put the driver units on the labels
+                            $.each(json['drivers_descriptions'],function(key,val){
+                                $cblog(5,e,"Description for "+String(key)+"is "+String(val))
+                                if (val != null) {
+                                    thedescriptions[key] = val //store for later
+                                    $("#dynamicinputlabel"+key).attr("title",String(val))
+                                }
+                            })
+                            
+                        }
+                    }));
+
+                    var updating_data = $.when(getting_units).then(
+                        $.ajax({url: "/uihandler",data: {"statevar":"drivers_ranges"},type:"GET",
+                        success: function(json){
+                            $cblog(4,e,"Before: "+String(dynamicdriverchartdata));
+                            //Use the driver ranges to update the chart data
+                            var names = dynamicdriverchartdata.map(function(x) {return x.name; })                        
+                            $.each(json['drivers_ranges'], function(key,rangeval){
+                                names = names.filter(function (el) {return el.name !== key}) //Remove element from names matching key
+                                var driverval = Number($("#dynamicinput"+key).val()) //Value of input converted to number
+                                $cblog(5,e,"Driver "+String(key)+"has value "+String(driverval)+"and range "+String(rangeval))
+                                if ( !isNaN(driverval) ) {
+                                    //check if we have a value in the array of chart data already
+                                    //Find the index of the existing object    
+                                    var ind = dynamicdriverchartdata.map(function(x) {return x.name; }).indexOf(key); 
+                                    $cblog(5,e,"Driver "+String(key)+" has index "+String(ind))
+                                    if ( ind === -1 ) {
+                                        // No value with name 'key' exists in array
+                                        var newobj = {name:key,value:driverval,min:Number(rangeval[0]),
+                                            max:Number(rangeval[1]),units:theunits[key],
+                                            desc:thedescriptions[key]};
+                                        dynamicdriverchartdata.push(newobj);
+                                    } else {
+                                        // Just update existing value
+                                        dynamicdriverchartdata[ind].value = driverval;
+                                        dynamicdriverchartdata[ind].min = Number(rangeval[0]);
+                                        dynamicdriverchartdata[ind].max = Number(rangeval[1]);
+                                        dynamicdriverchartdata[ind].units = theunits[key]
+                                        dynamicdriverchartdata[ind].desc = thedescriptions[key]
+                                    }
+
+                                }
+                            });
+                            //remove any elements leftover (un-updated) in the data array
+                            $.each(names, function (thename) {
+                                dynamicdriverchartdata = dynamicdriverchartdata.filter(function(el) {return el.name !== thename})
+                            });
+                            //Append the EUV flux
+                            dynamicdriverchartdata = addEUV(dynamicdriverchartdata)
+
+                            // Update the chart
+                            $cblog(4,e,"After: "+String(dynamicdriverchartdata));
+                            updated3chart()
+                                
+                        } //end of success function
+                    })); //end of the ajax                    
+
+                    $.when(updating_data).done(all_done.resolve);
                 } else {
                     $cblog(4,e,"Drivers not set to reinit, resolving main Deferred")
                     all_done.resolve()
                 }
                 return all_done.promise()
             })
+
 
             //Put a loading image in the plot
             $("#capdiv").slideUp()
@@ -1188,11 +1342,11 @@
                 <div ID="datepanel" class="panel">
                     <h2 class="h2title">Date and Time</h2>
 		    <p>Entering a date will also look up the drivers for that date</p>
-                    <p>Y-M-D H:M</p>
-                    <input type="text" name="year" value="2000" size="4" class="dateinput"><span>-</span>
-                    <input type="text" name="month" value="06" size="2" class="dateinput"><span>-</span>
+                    <p>Year-Month-Day Hour:Minute</p>
+                    <input type="text" name="year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
+                    <input type="text" name="month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
                     <input type="text" name="day" value="21" size="2" class="dateinput"><span>  </span>
-                    <input type="text" name="hour" value="12" size="2" class="dateinput"><span>:</span>
+                    <input type="text" name="hour" value="12" size="2" class="dateinput"><span><strong>:</strong></span>
                     <input type="text" name="minute" value="00" size="2" class="dateinput">             
                 </div>
                 
@@ -1204,6 +1358,9 @@
                     </div>
                 </div>
 
+                <div ID="driverchart" class="panel chart">     
+                </div>
+
                 <div ID="debugpanel" class="panel debug">
                     
                     <h2 class="h2title debug">Debugging</h2>
@@ -1211,9 +1368,7 @@
                     
                 </div>
 
-                <div ID="low_branding_div" class="branding">
-                        
-                </div>
+               
                     
 
             </div>

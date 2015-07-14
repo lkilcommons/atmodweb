@@ -185,7 +185,9 @@ class ControlStateManager(object):
 			'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
 			'thisplot':None,'thiscaption':None,'mapproj':'moll',
 			'drivers':{'dt':datetime.datetime(2000,6,21,12,0,0)},
-			'drivers_units':{'dt':None},'drivers_ranges':{'dt':[datetime.datetime(1970,1,1),datetime.datetime(2012,12,31,23,59,59)]}}
+			'drivers_units':{'dt':None},
+			'drivers_ranges':{'dt':[datetime.datetime(1970,1,1),datetime.datetime(2012,12,31,23,59,59)]},
+			'drivers_descriptions':{'dt':'date and time of model run'}}
 
 		self._bound_meth = dict() # Methods which are bound to certain controlstate keys, such that when those keys are changed,
 								  #the methods are called. Sort of an ad-hoc slots and signals a'la QT
@@ -443,6 +445,8 @@ class Synchronizer(object):
 			self.controlstate['datetime'][key] = getattr(self.mr.runs[-1].drivers['dt'],key)
 		self.controlstate['drivers_units']=copy.deepcopy(self.mr.runs[-1].drivers.units)
 		self.controlstate['drivers_ranges']=copy.deepcopy(self.mr.runs[-1].drivers.allowed_range)
+		self.controlstate['drivers_descriptions']=copy.deepcopy(self.mr.runs[-1].drivers.descriptions)
+		
 
 	def autoscale(self):
 		"""Updates the xbounds,ybounds and zbounds in the controlstate from the lims dictionary in last model run"""
@@ -894,6 +898,10 @@ class UiHandler(object):
 		if isinstance(indata,dict):
 			outdata = copy.deepcopy(indata)
 			for k in outdata:
+				outdata[k] = self.output_sanitize(outdata[k])
+		elif isinstance(indata,list):
+			outdata = copy.deepcopy(indata)
+			for k in range(len(outdata)):
 				outdata[k] = self.output_sanitize(outdata[k])
 		elif isinstance(indata,datetime.datetime):
 			outdata = indata.strftime('%Y-%m-%d %H:%M:%S')
