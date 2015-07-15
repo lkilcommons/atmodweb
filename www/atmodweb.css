@@ -1,17 +1,20 @@
 body {
-	background: #222222
+	background: #222222;
+	font-family: 'Droid Sans', sans-serif;
 }
 
 div#titlewrap {
 	width: 95%;
 	float: left;
 	margin: 0 auto;
+	text-align: center;
 }
 
 div#titlepanel {
 
 	width: 65%;
 	float: left;
+
 }
 
 div#branding_div {
@@ -45,6 +48,25 @@ label {
 
 input {
 	width: auto;
+}
+
+a, a:link, {
+    color: #A8E4AD; /* aurora green */
+    text-decoration: underline;
+}
+a:visited {
+	color: #1A7126; /* dark aurora */
+}
+a:hover {
+    background-color: #000;    /* Black */
+}
+
+#username {
+	color: #FBD905;
+}
+
+#xvartext,#yvartext,#zvartext {
+	color: #FBD905;
 }
 
 .h2title {
@@ -87,6 +109,13 @@ div.panel {
 	display: none;
 }
 
+#controlpanel {
+	display: inline;
+	width: 95%;
+	text-align: right;
+	float:left;
+}
+ 
 .chart div {
   font: 10px sans-serif;
   background-color: steelblue;
@@ -94,6 +123,10 @@ div.panel {
   padding: 3px;
   margin: 1px;
   color: white;
+}
+
+.control {
+	display: inline;
 }
 
 .plot_container{

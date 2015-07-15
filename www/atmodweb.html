@@ -3,6 +3,7 @@
    <head>
     <meta charset="utf-8" />
     <link href="www/atmodweb.css" rel="stylesheet" type="text/css">
+    <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'> 
     <title>AtModWeb</title>
     </head>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
@@ -1349,6 +1350,12 @@
                     <a href='http://ccar.colorado.edu/seda'><img class="branding" alt="SEDA logo" src="www/seda_banner_short_crop.png" ></img></a>
                     <a href='http:/www.colorado.edu/aerospace/'><img class="branding" alt="CU Aerospace logo" src="www/cu-aero.jpg" ></img></a>
             </div>
+            <div ID="controlpanel">
+                <span> Logged in as: <strong ID="username"></strong><a href="/login"> (Not you?) </a></span>
+                <button ID="restart" class="control" title="Bugs? App frozen? Click here to restart the application.">Restart</button>
+                <button ID="logout" class="control" title="Click here to log out of the application">Log Out</button>
+                <button IU="help" class="control" title="Click here to to the see descriptions of what every control does">Help</button>
+            </div>
         </div>
 
         <div ID = "loading" class="panel">
@@ -1358,12 +1365,7 @@
         <div ID="wrap">
             <div ID="leftcolumn">
 
-                <div ID="controlpanel" class="panel">
-                <h2 class="h2title">Controls</h2>
-                    <p> Logged in as: <span ID="username"></span><a href="/login"> (Not you?) </a></p>
-                    <button ID="restart" class="control" title="Bugs? App frozen? Click here to restart the application.">Restart App</button>
-                    <button ID="logout" class="control" title="Click here to log out of the application">Log Out</button>
-                </div>
+                
 
                 
 
@@ -1433,7 +1435,7 @@
                     <button ID="plotbutton">PLOT</button>
 
                     <div ID="xvar_div" class="panel xvar">
-                        <h2 style="display:inline;" class="var yvar">X:</h2>
+                        <h2 ID="xvartext" style="display:inline;" class="var yvar">X:</h2>
                         <select ID="xvar_select" name="xvar" multiple="true" class="var xvar intitialize_me">
                                 <option value="null">Choose a X variable...</option>
                         </select>
@@ -1448,7 +1450,7 @@
                     </div>
                     
                     <div ID="yvar_div" class="panel yvar">
-                        <h2 style="display:inline;" class="var yvar">Y:</h2>
+                        <h2 ID="yvartext" style="display:inline;" class="var yvar">Y:</h2>
                         <select ID="yvar_select" name="yvar" multiple="true" class="var yvar intitialize_me">
                             <option value="null">Choose a Y variable...</option>
                         </select>
@@ -1463,7 +1465,7 @@
                     </div>
                     
                     <div ID="zvar_div" class="panel zvar">
-                        <h2 style="display:inline;" class="var zvar">Color:</h2>
+                        <h2 ID="zvartext" style="display:inline;" class="var zvar">Color:</h2>
                         <select ID="zvar_select" name="zvar" multiple="true" class="var zvar intitialize_me">
                             <option value="null">Choose a color variable...</option>
                         </select>
