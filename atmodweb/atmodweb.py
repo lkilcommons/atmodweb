@@ -453,9 +453,9 @@ class Synchronizer(object):
 		"""Updates the xbounds,ybounds and zbounds in the controlstate from the lims dictionary in last model run"""
 		self.mr.runs[-1].autoscale_all_lims() #Sets all lims to their min and max in the model data
 
-		xdata,xlims,xunits = self.mr[self.controlstate['xvar']] #returns data,lims
-		ydata,ylims,yunits = self.mr[self.controlstate['yvar']] #returns data,lims
-		zdata,zlims,zunits = self.mr[self.controlstate['zvar']] #returns data,lims
+		xdata,xlims,xunits,xdesc = self.mr[self.controlstate['xvar']] #returns data,lims
+		ydata,ylims,yunits,ydesc = self.mr[self.controlstate['yvar']] #returns data,lims
+		zdata,zlims,zunits,zdesc = self.mr[self.controlstate['zvar']] #returns data,lims
 
 		self.controlstate['xbounds']=xlims
 		self.controlstate['ybounds']=ylims
@@ -959,7 +959,18 @@ class UiHandler(object):
 			for prefix in ['x','y','z']:
 				for suffix in ['var','bounds','units','desc','log']:
 					retval[prefix+suffix] = dict.__getitem__(self.controlstate,prefix+suffix) 
-
+		elif statevar == 'chartdata':
+			retval = dict()
+			for driver in self.controlstate['drivers']:
+				retval[driver] = dict()
+				retval[driver]['data'] = self.controlstate['drivers'][driver]
+				#Now loop on all
+				for metadata_key in ['drivers_descriptions','drivers_units','drivers_ranges']:
+					if driver in self.controlstate[metadata_key]: 	 
+						retval[driver][metadata_key.split('_')[-1]]=self.controlstate[metadata_key][driver]
+					else:
+						retval[driver][metadata_key.split('_')[-1]]=None
+			self.log.info("Chartdata is %s" % (str(retval)))
 		retjson[statevar]=self.output_sanitize(retval)
 		return retjson
 

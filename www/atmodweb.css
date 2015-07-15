@@ -3,12 +3,27 @@ body {
 	font-family: 'Droid Sans', sans-serif;
 }
 
+/*Top of the page, title and overall controls*/
 div#titlewrap {
 	width: 95%;
 	float: left;
 	margin: 0 auto;
 	text-align: center;
 }
+
+/*Div containing main controls at top of page*/
+#controlpanel {
+	display: inline;
+	width: 95%;
+	text-align: right;
+	float:left;
+	margin-top: .2em
+}
+
+.control {
+	display: inline;
+}
+
 
 div#titlepanel {
 
@@ -21,6 +36,8 @@ div#branding_div {
 	width: 25%;
 	float: left;
 }
+
+/*Main Page*/
 
 div#wrap {
 	width:95%;
@@ -37,36 +54,14 @@ div#leftcolumn {
 	float: left;
 }
 
+h1{
+	font-size: medium;	
+	display:block;
+}	
+
 .h1title {
 	font-size: 18pt;
 	text-align: center;
-}
-
-label {
-	padding: 0.5em;
-}
-
-input {
-	width: auto;
-}
-
-a, a:link, {
-    color: #A8E4AD; /* aurora green */
-    text-decoration: underline;
-}
-a:visited {
-	color: #1A7126; /* dark aurora */
-}
-a:hover {
-    background-color: #000;    /* Black */
-}
-
-#username {
-	color: #FBD905;
-}
-
-#xvartext,#yvartext,#zvartext {
-	color: #FBD905;
 }
 
 .h2title {
@@ -87,35 +82,56 @@ div.panel {
 	    border-radius: 10px;
 	    padding: 0.5em;
 	    margin: 0.5em;
-	    width: 90%;
-	    
+	    width: 90%;	    
 }
 
-#plotbutton {
-	background: #E18628;
+/*Pretty green buttons, i.e. PLOT*/
+.fancybutton {
+	background: #A8E2AD;
 	font-size: 100%;
-	border-radius: 4px;
-	border: 2px solid #222222;
+	border-radius: 5px;
+	border-left: 0px solid #111111;
+	border-bottom: 1px solid #111111;
+	border-right: 1px solid #111111;
+	border-top: 0px solid #111111;
 	text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.2);
-	color: white;
-	width: 5em;
+	color: #111111;
+	min-width: 5em;
 }
 
-#manualpanel_controls{
-	display:none;
+label {
+	padding: 0.5em;
 }
 
-.clicked {
-	display: none;
+input {
+	width: auto;
 }
 
-#controlpanel {
-	display: inline;
-	width: 95%;
-	text-align: right;
-	float:left;
+input[type="text"]{
+	padding: 1px;
+}
+
+/*Anchor/link colors*/
+a, a:link, {
+    color: #A8E4AD; /* aurora green */
+    text-decoration: underline;
+}
+a:visited {
+	color: #1A7126; /* dark aurora */
+}
+a:hover {
+    background-color: #000;    /* Black */
+}
+
+#username {
+	color: #EDD905;
+}
+
+#xvartext,#yvartext,#zvartext {
+	color: #EDD905;
 }
  
+/*d3 chart*/
 .chart div {
   font: 10px sans-serif;
   background-color: steelblue;
@@ -125,15 +141,6 @@ div.panel {
   color: white;
 }
 
-.control {
-	display: inline;
-}
-
-.plot_container{
-	background: background: #3D3D7F;
-	float: left; 
-	width: 100%; 
-}
 
 .branding{
 	float: right;
@@ -141,19 +148,38 @@ div.panel {
 	max-height: 5em;
 }
 
-input[type="text"]{
-	padding: 1px;
 
-}
 
-h1{
-	font-size: medium;	
-	display:block;
-}	
+/*Elements immediately surrounding plot*/
 
 figure {
   margin: 0.5em;
   padding: 0.5em;
+}
+
+
+.plotcontrols {
+	display: inline;
+}
+
+#plot_left_controls {
+	position: relative;
+	float: left;
+	text-align: left;
+	width: 45%;
+}
+
+#plot_right_controls {
+	position: relative;
+	float: right;
+	text-align: right;
+	width: 45%;
+}
+
+.plot_container{
+	background: background: #3D3D7F;
+	float: left; 
+	width: 100%; 
 }
 
 .captionlist {
@@ -171,7 +197,7 @@ li.captionlist{
   line-height:1.5em;
 }
 
-.button{ 
+.button { 
  border: 4px outset;
  padding: 2px;
  text-decoration: none;
