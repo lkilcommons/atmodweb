@@ -107,6 +107,10 @@ input {
 	width: auto;
 }
 
+.bounds {
+	max-width: 5em;
+}
+
 input[type="text"]{
 	padding: 1px;
 }

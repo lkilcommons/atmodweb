@@ -1269,7 +1269,10 @@ class AtModWebObj(object):
 		self.canvas = FakeCanvas(self)
 		self.syncher = Synchronizer(self.canvas,self.uihandler)
 		self.syncher.refresh(force_full_refresh=True)
-		self.plots = glob.glob(os.path.join(self.parent.rootdir,self.parent.imgreldir,'amwo_*.png')) #List of all plots in the img dir
+		plots = glob.glob(os.path.join(self.parent.rootdir,self.parent.imgreldir,'amwo_%s_*.png' % (str(self.userid))))
+		if len(plots) > self.n_max_plots:
+			os.remove(plots) #Clean up after yourself on restart
+		self.plots =  [] #List of all plots in the img dir
 		self.replot()
 
 
@@ -1349,6 +1352,7 @@ class UiDispatcher(object):
 			self.muamwo._usernames[userid] = un
 			respcookie = cherrypy.response.cookie
 			respcookie['userid'] = userid
+			respcookie['userid']['max-age']=3600
 			return {posttype:'true'}
 		elif 'logout' == 'posttype':
 			self.muamwo.logout()
@@ -1382,8 +1386,8 @@ class MultiUserAtModWebObj(object):
 			retstr += "<h1> Currently running amwo instances: </h1>" 
 			retstr += "<ul>"
 			for key in self._amwo:
-				retstr += "<li>%s: created at %s by %s</li>" % (key,self._amwo[key].time_created.strftime("%c"),
-					str(self._usernames[key]) if key in self._usernames else 'DEFUNCT USER')
+				retstr += "<li>%s: created at %s by %s, last accessed %s</li>" % (key,self._amwo[key].time_created.strftime("%c"),
+					str(self._usernames[key]) if key in self._usernames else 'DEFUNCT USER',self._amwo[key].last_accessed.strftime("%c"))
 			retstr += '</ul>' 
 		retstr += "</body></html>"
 		return retstr
@@ -1397,6 +1401,7 @@ class MultiUserAtModWebObj(object):
 			self._usernames[userid] = '--pending--'
 			respcookie = cherrypy.response.cookie
 			respcookie['userid'] = userid
+			respcookie['userid']['max-age']=3600
 			raise cherrypy.HTTPRedirect("/login")
 		else:
 			userid = reqcookie['userid'].value
@@ -1409,7 +1414,7 @@ class MultiUserAtModWebObj(object):
 		del(self._usernames[uid])
 		del(self._amwo[uid])
 		respcookie = cherrypy.response.cookie
-		respcookie['userid']['max_age']=0
+		respcookie['userid']['max-age']=0
 		respcookie['userid']['expires']=time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(time.time()))
 
 	def newuserid(self):
@@ -1438,9 +1443,11 @@ class MultiUserAtModWebObj(object):
 	def get_user_amwo(self):
 		userid = self.get_userid()
 		if userid is not None:
+			#Update the last accessed time
+			self._amwo[userid].last_accessed = datetime.datetime.now()
 			return self._amwo[userid]
 		else:
-			raise cherrpy.HTTPRedirect('/login')
+			raise cherrypy.HTTPRedirect('/login')
 
 
 if __name__ == '__main__':

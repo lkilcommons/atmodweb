@@ -35,29 +35,30 @@
             <div ID="leftcolumn">
 
 
-                <div ID="locationpanel" class="panel">
+                <div ID="locationpanel" class="panel" title="The position you input here determines the value of position variables not being varied in the plot (i.e. if X=lat and Y=lon, then only altitude will be visibile here and you will get a 'slice' of atmosphere at whatever altitude you specify">
                 <h2 class="h2title">Location</h2>
-                    <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br>
-                    <label ID='loninputlbl'>Longitude:<input ID='loninput' type="text" name="lon" size="8" value="" class="positioninput"></label><br>
+                    <label ID='latinputlbl'>Latitude:<input ID='latinput' type="text" name="lat" size="8" value="" class="positioninput"></label><br ID="latinputbr">
+                    <label ID='loninputlbl'>Longitude:<input ID='loninput' type="text" name="lon" size="8" value="" class="positioninput"></label><br ID="loninputbr">
                     <label ID='altinputlbl'>Altitude[km]:<input ID='altinput' type="text" name="alt" size="8" value="" class="positioninput"></label>
                 </div>
 
                 <div ID="datepanel" class="panel">
                     <h2 ID="datepanel_title" class="h2title">Date and Time</h2>
-                    <div ID="datepanel_controls">
-                        <p>Year-Month-Day Hour:Minute</p>
-                        <input type="text" name="year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
-                        <input type="text" name="month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
-                        <input type="text" name="day" value="21" size="2" class="dateinput"><span>  </span>
-                        <input type="text" name="hour" value="12" size="2" class="dateinput"><span><strong>:</strong></span>
-                        <input type="text" name="minute" value="00" size="2" class="dateinput">
+                    <div ID="datepanel_controls" title="Input the time and date for which to run the model here. Solar wind drivers will be looked up from a database for the date and the sun's position will be determined by the date and time">
+                        <p>Year-Month-Day</p>
+                        <input type="text" name="year" title="Year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
+                        <input type="text" name="month" title="Month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
+                        <input type="text" name="day" title='Day' value="21" size="2" class="dateinput"><br>
+                        <p>Hour:Minute (Universal Time)</p>
+                        <input type="text" name="hour" title='Hour, in Universal Time' value="12" size="2" class="dateinput"><span><strong>:</strong></span>
+                        <input type="text" name="minute" title='Minute, in Universal Time' value="00" size="2" class="dateinput">
                     </div>            
                 </div>
                 
                 
                 <div ID="manualpanel" class="panel">
                     <h2 ID="manualpanel_title" class="h2title">Manual Driver Entry</h2>
-                    <div ID="manualpanel_controls">
+                    <div ID="manualpanel_controls" title="You can change the solar activity parameters that are fed to the model here">
                         <div ID="dynamicdriverdiv" class="initialize_me">
 
                         </div>
@@ -89,7 +90,7 @@
                     </select>
 
                     <label> Type of plot: 
-                        <select ID="plottype_select" name="plottype" class="plottype">
+                        <select ID="plottype_select" name="plottype" class="plottype" title="This controls what type of plot you will being making">
                             <option value="null">Choose a plot type...</option>
                             <option value="line">Line Plot</option>
                             <option value="pcolor">Heatmap/Pseudocolor</option>
@@ -97,21 +98,22 @@
                         </select>
                     </label>
 
-                    <button ID="plotbutton" class="fancybutton">Plot</button>
+                    <button ID="plotbutton" class="fancybutton" title="Read the values from the controls and make your plot">Plot</button>
                     
 
                     <div ID="xvar_div" class="panel xvar">
-                        <h2 ID="xvartext" style="display:inline;" class="var yvar">X:</h2>
+                        <h2 ID="xvartext" style="display:inline;" class="var yvar" title="Variable to be plotted on the X axis">X:</h2>
                         <select ID="xvar_select" name="xvar" multiple="true" class="var xvar intitialize_me">
                                 <option value="null">Choose a X variable...</option>
                         </select>
 
-                        <label ID="xlog_label" class="xvar">Logscale:                 
+                        <label ID="xlog_label" class="xvar" title="Log scale X axis if checked, otherwise linear scale">Logscale:                 
                             <input ID="xlog" type="checkbox" name="xlog" class="var xvar log">
                         </label>
 
-                        <label ID="xbounds_label" class="xvar">Limits:                   
-                            <input ID="xbounds" type="text" name="xbounds" class="var xvar bounds">
+                        <label ID="xbounds_label" class="xvar" >Limits:                   
+                            <input ID="xboundsmin" type="text" name="xbounds" class="var xvar bounds xbounds min" title="The minimum (leftmost) value of the X axis">
+                            <input ID="xboundsmax" type="text" name="xbounds" class="var xvar bounds xbounds max" title="The maximum (rightmost) value of the X axis">
                         </label>
                     </div>
                     
@@ -126,7 +128,8 @@
                         </label>
 
                         <label ID="ybounds_label" class="yvar">Limits:                   
-                            <input ID="ybounds" type="text" name="ybounds" class="var yvar bounds">
+                            <input ID="yboundsmin" type="text" name="ybounds" class="var yvar bounds ybounds min" title="The mimimum (bottom) value of the Y axis">
+                            <input ID="yboundsmax" type="text" name="ybounds" class="var yvar bounds ybounds max" title="The maximum (top) value of the Y axis">
                         </label>
                     </div>
                     
@@ -141,7 +144,8 @@
                         </label>
 
                         <label ID="zbounds_label" class="zvar">Limits:                   
-                            <input ID="zbounds" type="text" name="zbounds" class="var zvar bounds">
+                            <input ID="zboundsmin" type="text" name="zbounds" class="var zvar bounds zbounds min" title="The maximum (top) value of the colorbar">
+                            <input ID="zboundsmax" type="text" name="zbounds" class="var zvar bounds zbounds max" title="The minimum (bottom) value of the colorbar">
                         </label>
 
                     </div>

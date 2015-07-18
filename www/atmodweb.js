@@ -50,17 +50,17 @@
             
             //Make an object that associates selectors backwards with their name and associated bounds and log objects
             $selobj = {};
-            $selobj[$xvar_sel.attr("name")] = {'sel':$("#xvar_select"),'bounds':$("#xbounds"),'log':$("#xlog")};
-            $selobj[$yvar_sel.attr("name")] = {'sel':$("#yvar_select"),'bounds':$("#ybounds"),'log':$("#ylog")};
-            $selobj[$zvar_sel.attr("name")] = {'sel':$("#zvar_select"),'bounds':$("#zbounds"),'log':$("#zlog")};
+            $selobj[$xvar_sel.attr("name")] = {'sel':$("#xvar_select"),'bounds':$(".xbounds"),'log':$("#xlog")};
+            $selobj[$yvar_sel.attr("name")] = {'sel':$("#yvar_select"),'bounds':$(".ybounds"),'log':$("#ylog")};
+            $selobj[$zvar_sel.attr("name")] = {'sel':$("#zvar_select"),'bounds':$(".zbounds"),'log':$("#zlog")};
             
             //Selectors for related controls
             $all_var_sel = $("#xvar_select, #yvar_select, #zvar_select")
             $all_var_log = $("#xlog,#ylog,#zlog")
-            $all_var_bounds = $("#xbounds,#ybounds,#zbounds")
+            $all_var_bounds = $("#xboundsmin,#xboundsmax,#yboundsmin,#yboundsmax,#zboundsmin,#zboundsmax")
             
             //Selector for everything
-            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, #xbounds, #ybounds, #zbounds,.dateinput,.positioninput,.dynamicinput")
+            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
 
             //Set up the functions to change controlstates
 
@@ -129,7 +129,7 @@
                             num[i] = myself(num[i])
                         }
                     } else {
-                        if (Math.abs(num) > 10000 || (Math.abs(num) < .00001 && num != 0)) {
+                        if (Math.abs(num) > 10000 || (Math.abs(num) < .00001 && num !== 0)) {
                             num = num.toExponential(2)
                         } else {
                             num = num.toFixed(2) // 2 decimal places
@@ -200,8 +200,8 @@
                 //if (lat_in) { $("#latinput").attr('disabled',true) } else { $("#latinput").removeAttr('disabled') } 
                 //if (lon_in) { $("#loninput").attr('disabled',true) } else { $("#loninput").removeAttr('disabled') }
                 //if (alt_in) { $("#altinput").attr('disabled',true) } else { $("#altinput").removeAttr('disabled') }
-                if (lat_in) { $("#latinputlbl").hide() } else { $("#latinputlbl").show() } 
-                if (lon_in) { $("#loninputlbl").hide() } else { $("#loninputlbl").show() }
+                if (lat_in) { $("#latinputlbl,#latinputbr").hide() } else { $("#latinputlbl,#latinputbr").show() } 
+                if (lon_in) { $("#loninputlbl,#loninputbr").hide() } else { $("#loninputlbl,#loninputbr").show() }
                 if (alt_in) { $("#altinputlbl").hide() } else { $("#altinputlbl").show() }
     
                         
@@ -407,7 +407,12 @@
                             //We don't want multiple limits
                             newbounds = newbounds[newbounds.length-1]
                         }
-                        var newval = $format_number(newbounds) 
+                        //console.log(newbounds)
+                        if ( $(e.target).hasClass('max') ) {
+                            var newval = $format_number(newbounds[1]) //Use the second number in the comma separated string
+                        } else if ( $(e.target).hasClass('min') ){
+                            var newval = $format_number(newbounds[0]) //Use the first number in the comma separated string
+                        }
                         if ($(e.target).val() != newval) {
                             $(e.target).val(newval)
                             $(e.target).fadeOut(200).fadeIn(200) 
@@ -527,6 +532,7 @@
 
                 if (selection == "map")
                 {
+
                     $(".zvar").show()
                     
                     $xvar_sel.addClass("initialize_me")
@@ -647,26 +653,35 @@
             //--X, Y, and Z Bounds Inputs
             $all_var_bounds.on("change",function(e) {
                 $cblog(5,e,"In callback")
+                var myid = $(e.target).attr("ID")
                 var myname = $(e.target).attr("name")
-                var newval = $(e.target).val()
-                var temp = newval.split(',') //Try to split up by commas
-                
-                $cblog(4,e,"value of textbox is: "+newval)
-                $cblog(4,e,"value of split array is: "+String(temp))
-                
-                if ( temp.length % 2 != 0 || temp.length < 2 ) {
-                    alert("Bounds inputs must have form lowerbound,upperbound,(lowerbound2,upperbound2,... if multiplot)")
+                var myval = $(e.target).val()
+                //var temp = newval.split(',') //Try to split up by commas
+                //figure out if it was the minimum or maximum input
+                //that triggered the event
+                if ( $(e.target).hasClass('max') ) {
+                    var mysibval = $('#'+myid.split('bounds')[0]+"boundsmin").val()
+                    newval = [mysibval,myval]
+                    $cblog(4,e,"Determined that max limit generated event, sibling value is "+String(mysibval))
+                } else if ( $(e.target).hasClass('min') ) {
+                    var mysibval = $('#'+myid.split('bounds')[0]+"boundsmax").val()
+                    newval = [myval,mysibval]
+                    $cblog(4,e,"Determined that min limit generated event, sibling value is "+String(mysibval))
                 } else {
-                    //Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
-                    putting_bounds = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":temp},true),type: "PUT",
-                        error: function (e) {
-                            alert("Unable to complete bounds update. Please make sure your bounds were formatted correctly (always include decimal point)")
-                        }
-                    })
-                    
-                    return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
-                    //return putting_bounds
+                    alert("Error while determining if the maximum or minimum limit was changed. Please report this bug.")
+                    return $.Deferred().resolve() //Return nothing but an empty resolved deferred
                 }
+
+                //Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
+                putting_bounds = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":newval},true),type: "PUT",
+                    error: function (e) {
+                        alert("Unable to complete bounds update. Please make sure your bounds were formatted correctly (always include decimal point)")
+                    }
+                })
+                
+                return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
+                //return putting_bounds
+            
             });
 
             //--Date Change Inputs
@@ -920,8 +935,8 @@
                             var bigselector = ''
                             
                             $.each(json["drivers"], function(key,value) {
-                               
-                                if ( key === 'dt' ) {
+                                //Check if the input type is date or array
+                                if ( key === 'dt' || $.isArray(value) ){ 
                                     return true; //Forces jQuery to skip this loop iteration   
                                 }
                                 $cblog(5,e,"Adding driver "+key+" : "+value)
@@ -1176,6 +1191,25 @@
                 }
             });
 
+            //Implement mutual exclusivity of drivers and dates
+            $("#manualpanel").on("click", function (e){
+                $("#manualpanel_title").text("Manual Driver Entry")
+                var animating1 = $("#manualpanel_controls").slideDown()
+                $("#datepanel_title").text("Click to Look Up Solar Activity By Date")
+                var animating2 = $("#datepanel_controls").slideUp()
+                var ajaxing = $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"False"},type: "PUT"})
+                return $.when(animating2,animating1,ajaxing)
+            })
+
+            $("#datepanel").on("click", function (e){
+                $("#manualpanel_title").text("Click to Specify Solar Activity Manually")
+                var animating1 = $("#manualpanel_controls").slideUp()
+                $("#datepanel_title").text("Date and Time")
+                var animating2 = $("#datepanel_controls").slideDown()
+                var ajaxing = $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"True"},type: "PUT"})
+                return $.when(animating1,animating2,ajaxing)
+            })
+
             //------------------------------------------------------------------------------------------------
             //
             //  END OF CALLBACKS, FROM HERE ON, WE ARE EXECUTING THE MAIN BODY OF THE PAGE LOAD / APP STARTUP
@@ -1242,7 +1276,8 @@
                                     //trigger all bounds to refresh
                                     return $.when_all_trigger($all_var_bounds,"focus")
                                 })
-                            .then($("#dynamicdriverdiv").triggerHandler("click")).done(
+                            .then($("#dynamicdriverdiv").triggerHandler("click"))
+                            .then($("#datepanel").triggerHandler("click")).done(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
                                 //and update the plot
@@ -1267,22 +1302,7 @@
             
             
 
-            //Implement mutual exclusivity of drivers and dates
-            $("#manualpanel").on("click", function (e){
-                $("#manualpanel_title").text("Manual Driver Entry")
-                $("#manualpanel_controls").slideDown()
-                $("#datepanel_title").text("Click to Look Up Solar Activity By Date")
-                $("#datepanel_controls").slideUp()
-                $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"False"},type: "PUT"})
-            })
-
-            $("#datepanel").on("click", function (e){
-                $("#manualpanel_title").text("Click to Specify Solar Activity Manually")
-                $("#manualpanel_controls").slideUp()
-                $("#datepanel_title").text("Date and Time")
-                $("#datepanel_controls").slideDown()
-                $.ajax({url: "/uihandler", data: {"statevar":"driver_lookup","newval":"True"},type: "PUT"})
-            })
+            
 
             //Bind a change handler to the username field
             //$("#username").on("change",function(e) {
