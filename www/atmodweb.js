@@ -50,9 +50,9 @@
             
             //Make an object that associates selectors backwards with their name and associated bounds and log objects
             $selobj = {};
-            $selobj[$xvar_sel.attr("name")] = {'sel':$("#xvar_select"),'bounds':$(".xbounds"),'log':$("#xlog")};
-            $selobj[$yvar_sel.attr("name")] = {'sel':$("#yvar_select"),'bounds':$(".ybounds"),'log':$("#ylog")};
-            $selobj[$zvar_sel.attr("name")] = {'sel':$("#zvar_select"),'bounds':$(".zbounds"),'log':$("#zlog")};
+            $selobj[$xvar_sel.attr("name")] = {'sel':$("#xvar_select"),'boundsmin':$("#xboundsmin"),'boundsmax':$("#xboundsmax"),'log':$("#xlog")};
+            $selobj[$yvar_sel.attr("name")] = {'sel':$("#yvar_select"),'boundsmin':$("#yboundsmin"),'boundsmax':$("#yboundsmax"),'log':$("#ylog")};
+            $selobj[$zvar_sel.attr("name")] = {'sel':$("#zvar_select"),'boundsmin':$("#zboundsmin"),'boundsmax':$("#zboundsmax"),'log':$("#zlog")};
             
             //Selectors for related controls
             $all_var_sel = $("#xvar_select, #yvar_select, #zvar_select")
@@ -385,10 +385,14 @@
                             $(e.target).val(optionValues[0])
                             return $(e.target).triggerHandler("change")
                         }
-                    }).then($init_sel(myname)).then($selobj[myname]['bounds'].triggerHandler("focus")).done(initializing.resolve)
+                    }).then($init_sel(myname))
+                    .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
+                    .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    .done(initializing.resolve)
                     
                 } else {
-                    $.when($selobj[myname]['bounds'].triggerHandler("focus")).then(initializing.resolve())
+                    $.when($selobj[myname]['boundsmin'].triggerHandler("focus"),$selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    .then(initializing.resolve())
                 }
                 
                 return initializing.promise()
@@ -615,10 +619,10 @@
                     var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT"})
                     //Make sure the bounds are up to date
                     
-                    $.when(ajax_done
-                    ).then($selobj[myname]['sel'].triggerHandler("focus")
-                    ).then($selobj[myname]['bounds'].triggerHandler("focus")
-                    ).then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
+                    $.when(ajax_done)
+                    .then($selobj[myname]['sel'].triggerHandler("focus"))
+                    .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
+                    .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
                     })
