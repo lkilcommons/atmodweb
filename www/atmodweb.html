@@ -4,10 +4,13 @@
     <meta charset="utf-8" />
     <link href="www/atmodweb.css" rel="stylesheet" type="text/css">
     <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'> 
+    <link href="https://code.jquery.com/ui/1.11.4/themes/ui-darkness/jquery-ui.css" rel="stylesheet" type="text/css">
+    
     <title>AtModWeb</title>
     </head>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
     <script src="www/atmodweb.js"></script>
 
     <body>
@@ -29,6 +32,7 @@
 
         <div ID = "loading" class="panel">
             <h2 ID = "loading_message">Loading...please wait</h2>
+            <div ID="loading_progress"><div ID="loading_progress_label">Loading...</div></div>
         </div>
 
         <div ID="wrap">
@@ -85,10 +89,12 @@
 
                     <h2 class="h2title">Plot Options</h2>
 
-                    <select ID="model_select" name="modelname" class="model">
-                        <option value="msis">NRLMSISE00</option>
-                        <option value="hwm">HWM07</option>
-                    </select>
+                    <label class="model"> Model:
+                        <select ID="model_select" name="modelname" class="model">
+                            <option value="msis">NRLMSISE00</option>
+                            <option value="iri">IRI2011</option>
+                        </select>
+                    </label>
 
                     <label> Type of plot: 
                         <select ID="plottype_select" name="plottype" class="plottype" title="This controls what type of plot you will being making">
@@ -165,8 +171,11 @@
                             <button ID="autoscalebutton" class="plotcontrols"> Autoscale Graph</button>
                         </div>
 
+                        <div ID="plot_progress"><div ID="plot_progress_label">Running Model...</div></div>
+                            
                         <figure ID="plotfig">
                             <img ID="plotimg" alt="My MSIS plot" src="" title="Click to show/hide plot details"></img>
+
                         </figure>
                         
                         <div ID="capdiv" class="panel">

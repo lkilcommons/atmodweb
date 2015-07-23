@@ -20,6 +20,13 @@ div#titlewrap {
 	margin-top: .2em
 }
 
+/*Loading Page*/
+#loading_progress {
+	text-align: center;
+}
+#loading_progress_label {
+	display: inline;
+}
 .control {
 	display: inline;
 }
@@ -144,6 +151,7 @@ a:hover {
   margin: 1px;
   color: white;
 }
+
 
 .branding{
 	float: right;

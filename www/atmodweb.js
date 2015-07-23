@@ -71,18 +71,33 @@
             $("#dynamicdriverdiv").addClass("initialize_me")
             $(".debug").hide() // hide debug stuff till we press F1
 
+            //Create progressbar for loding 
+            $("#loading_progress").progressbar()
+            $("#plot_progress").progressbar()
+            $("#plot_progress").hide()
+
             //-------------------------------------------------------
             //Functions which preform repeated tasks
             //-------------------------------------------------------
 
-            $hide_controls = function(loadstr) {
+            $hide_controls = function(loadstr,defrd) {
                 $("#loading_message").text(loadstr)
                 $("#loading").hide()
                 $("#wrap").hide()
+                $("#loading_progress").progressbar("enable")
+                defrd.progress(function(msg,newval) {
+                    var val = $("#loading_progress").progressbar("value")
+                    $logit(1,"progressbar","Progress called from deferred, message is "+String(msg)+" newvalue is"+String(newval))
+                    $("#loading_progress").progressbar("value",newval)
+                    $("#loading_progress_label").text(msg)
+                })
                 $("#loading").fadeIn(500)
             }
 
             $show_controls = function () {
+                $("#loading_progress").progressbar("value",100)
+                $("#loading_progress_label").text("Done!")
+                $("#loading_progress").progressbar("disable")
                 $("#wrap").fadeIn(500)
                 $("#loading").fadeOut(500)   
             }
@@ -152,7 +167,7 @@
             $.whenall = function(arr) { return $.when.apply($, arr); };
 
             //Custom Logging Function, Python Style
-            $loglevel= 5; 
+            $loglevel= 2; 
             $logarr = ['ATMODWEB LOG'];
             $logon = false;
             $logit = function(level,context,message) {
@@ -294,8 +309,8 @@
                 return theul
             }
 
-            
-            $hide_controls("Prepare for launch!")
+            starting_up = $.Deferred()
+            $hide_controls("Prepare for launch!",starting_up)
 
             //-----------------------------------------------------
             //Handlers which initialize or update UI control values
@@ -384,7 +399,7 @@
                             $cblog(2,e,"Option "+selection+" is not sane, defualting to "+optionValues[0])
                             $(e.target).val(optionValues[0])
                             return $(e.target).triggerHandler("change")
-                        }
+                        } 
                     }).then($init_sel(myname))
                     .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
@@ -392,7 +407,7 @@
                     
                 } else {
                     $.when($selobj[myname]['boundsmin'].triggerHandler("focus"),$selobj[myname]['boundsmax'].triggerHandler("focus"))
-                    .then(initializing.resolve())
+                    .done(initializing.resolve)
                 }
                 
                 return initializing.promise()
@@ -535,7 +550,13 @@
                 }
 
                 if (selection == "map")
-                {
+                {   
+                    var xvar_trigger = $xvar_sel.val("Longitude").triggerHandler("change")
+                    var yvar_trigger = $yvar_sel.val("Latitude").triggerHandler("change")
+                    //Update the Deferred so that yvar and xvar selects are ensured to be the correct values (Longitude and Latitude)
+                    //after everything is done
+
+                    defrd.done(xvar_trigger,yvar_trigger)
 
                     $(".zvar").show()
                     
@@ -568,13 +589,16 @@
 
             //--Model Select Dropdown
             $("#model_select").on("change",function(e) {
-                $hide_controls("Changing models to: "+ $(e.target).val())
+                var changing_model = $.Deferred()
+                $hide_controls("Changing models to: "+ $(e.target).val(),changing_model)
+                changing_model.notify("Running "+$(e.target).val()+"...",5)
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var selection = $(e.target).val()
                 $cblog(4,e,"selection is "+String(selection)) 
                 var putting_new_model = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
                             success: function (ret) {
+                                changing_model.notify("Updating UI...",75)
                                 $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
                                 $all_var_sel.addClass("initialize_me")
                                 $cblog(3,e,"dynamic driver div told to reinit,triggering all focus") 
@@ -582,11 +606,11 @@
                             }   
                 })
 
-                return putting_new_model
+                return $putting_new_model
             });
 
             //Hide it for now because it doesn't work
-            $("#model_select").hide()
+            $(".model").hide()
             
             //--X,Y,Z Variable Select Dropdowns 
             $all_var_sel.on("change",function(e) {
@@ -898,7 +922,7 @@
                                             .text(function(d) { return d.name+':'+String(d.value); })
                                             .on("mouseover", function(d) {
                                                 d3.select(this).style("font-size","14px")
-                                                    .text(d.desc+"["+String(d.units)+"]: "+String(d.value)+" range: ("+String(d.min)+"-"+String(d.max)+")");
+                                                    .text(d.desc+"["+String(d.units)+"]: "+$format_number(d.value)+" range: ("+String(d.min)+"-"+String(d.max)+")");
                                             })
                                             .on("mouseout", function(d) {
                                                 d3.select(this).style("font-size","10px")
@@ -1237,23 +1261,26 @@
                         }  
                     }
                 })
-                                    
+            
+            //Add to the starting up deferred
+            getting_username.done(starting_up.notify('Getting user info...',5))
+
             //Signal to the uihandler that we're ready to sync up the contolstate to the session
             //we currently don't use this feature for anything, it could probably be removed TODO
             
             //Chain together synching and getting_username, remember that .then returns another deferred (or maybe a promise?)
-            var synching = $.when(getting_username).then($.ajax({url: "/uihandler", data: {"posttype":"uiready"},type: "POST"}))
+            var synching = getting_username.then($.ajax({url: "/uihandler", data: {"posttype":"uiready"},type: "POST"}))
             //synching is a 'Promise'...a read-only Deferred
-
+            synching.done(starting_up.notify('Syncing...',20))
             
             //--Set initial plot
-            var firstplot = $.when(synching).then(function (thedata) {
+            var initial_plot = $.when(synching).then(function (thedata) {
                 var success_done = $.Deferred()
                 $logit(3,"synching.done"," uiready POST has been sent and completed")
 
                 var plotting_done = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
                     success: function( json ) {
-                        
+                        starting_up.notify('First plot made...',70)
                         $logit(4,"syching.done: AJAX: POST:replotnow: success"," Beginning intialization $.then chain")
                         //These must be done in the right order, so I chain a bunch of then() calls 
                         //each of which returns a promise 
@@ -1281,10 +1308,12 @@
                                     return $.when_all_trigger($all_var_bounds,"focus")
                                 })
                             .then($("#dynamicdriverdiv").triggerHandler("click"))
-                            .then($("#datepanel").triggerHandler("click")).done(
+                            .then($("#datepanel").triggerHandler("click"))
+                            .done(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
                                 //and update the plot
+                                starting_up.notify('UI Refreshed!',75)
                                 $logit(4,"syching.done: AJAX: POST:replotnow : success","Now remove loading gif and put in img and caption")        
                                 $("#plotimg").attr("src",json["src"]);    
                                 $("#plotimg_cap").html($format_caption(json["cap"]))
@@ -1301,9 +1330,8 @@
             //When we have the controls properly setup initially, make 
             //sure that the position inputs are setup correctly,
             //and that the dynamic drivers chart has been updated
-            $.when(firstplot).done($hidePosIfNeeded,$("#driverchart").triggerHandler('focus')) 
+            initial_plot.done($hidePosIfNeeded,$("#driverchart").triggerHandler('focus')) 
 
-            
             
 
             
@@ -1389,7 +1417,7 @@
             }
             if(e.which == 77) {
                 // M press
-                $("#model_select").toggle()
+                $(".model").toggle()
             }
         });
         

@@ -538,7 +538,7 @@ class Synchronizer(object):
 
 	def modelname_changed(self):
 		"""Model name is changed, big reinit"""
-		if self.controlstate['modelname'] in ['msis','hwm']:
+		if self.controlstate['modelname'] in ['msis','hwm','iri']:
 			self.initModelRunner()
 			self.refreshSelectOptions()
 			self.refreshModelRunOptions()
