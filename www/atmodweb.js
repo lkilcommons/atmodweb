@@ -60,7 +60,7 @@
             $all_var_bounds = $("#xboundsmin,#xboundsmax,#yboundsmin,#yboundsmax,#zboundsmin,#zboundsmax")
             
             //Selector for everything
-            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
+            $all_controls = $("#model_select, #plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
 
             //Set up the functions to change controlstates
 
@@ -77,7 +77,7 @@
             $("#plot_progress").hide()
 
             //-------------------------------------------------------
-            //Functions which preform repeated tasks
+            //Utility Functions
             //-------------------------------------------------------
 
             $hide_controls = function(loadstr,defrd) {
@@ -595,7 +595,7 @@
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var selection = $(e.target).val()
-                $cblog(4,e,"selection is "+String(selection)) 
+                $cblog(4,e,"selection is "+String(selection))
                 var putting_new_model = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
                             success: function (ret) {
                                 changing_model.notify("Updating UI...",75)
@@ -607,6 +607,33 @@
                 })
 
                 return $putting_new_model
+            });
+
+            $("#model_select").on("focus",function(e) {
+                
+                $cblog(5,e,"In callback")
+                var myname = $(e.target).attr("name")
+                var oldval = $(e.target).val()
+                $cblog(4,e,"selection is "+String(oldval))
+                var checking_model = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
+                            success: function (json) {
+                                $cblog(5,e,"New model is: "+String(json[myname]))
+                                $(e.target).val(json[myname])
+                            }
+                }) //Chain in the check to see if we need to trigger the change event
+                .then(function () {
+                    //Call the changed handler if nessecary
+                    if ( oldval !== $(e.target).val() ){
+                        $cblog(4,e,"Model name has changed, triggering change event")
+                        return $(e.target).triggerHandler("change")
+                    }
+                    else {
+                        var def = $.Deferred().resolve() 
+                        return def.promise() //Just return a pre-resolved deferred
+                    }    
+                });
+
+                return checking_model
             });
 
             //Hide it for now because it doesn't work
@@ -760,7 +787,7 @@
                         $cblog(1,e,"FAILED on refreshnow POST, error was "+jqxhr.responseText)
                         var getting_error = $.ajax({url: "/uihandler", data: {"statevar":"lasterror"},type: "GET",
                             success: function (json) {
-                                alert("Oops, I couldn't refresh your plot. Please check that your selections make sense and press the plot button again. This message from the server may give you an idea what went wrong: "+String(json['lasterror']))
+                                alert("Oops, I couldn't refresh your plot. Please check that your selections make sense.\n"+String(json['lasterror']))
                             $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                             }
                         })

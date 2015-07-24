@@ -76,7 +76,6 @@ class ControlState(dict):
 			self.push() #Force an update of the session
 	
 	def __setitem__(self, key, value):
-
 		dict.__setitem__(self, key, value)
 		if self.sync:
 			cherrypy.session[key]=value
@@ -103,7 +102,7 @@ class ControlState(dict):
 			cherrypy.session[key] = dict.__getitem__(self,key)
 
 
-	def before_set_sanity(self,key,new_val,subkey=None):
+	def sanized_set(self,key,new_val,subkey=None):
 		"""
 		Examines a new value that is going to be put into the controlstate to see if it passes
 		basic sanity checks, like being the same type as the old value, and, if it's a list,
@@ -425,8 +424,16 @@ class Synchronizer(object):
 		"""Does a first run of the model specified in the controlstate to make sure that there's a reference run. 
 		A lot of code looks to the previously run model (i.e. to populate the selects for x, y and z)"""
 
-		self.mr = ModelRunner(model=self.controlstate['modelname'])
-		
+		if self.mr is None:
+			self.mr = ModelRunner(firstmodel=self.controlstate['modelname'])
+		else:
+			#Don't create a new modelrunner if we changed models, just 
+			#use the same one...a heterogeneous collection of ModelRun
+			#objects in mr.runs doens't really matter much unless
+			#we're trying to use peering, which AtModWeb doesn't
+			self.mr.model = self.controlstate['modelname']
+			self.mr.init_nextrun()
+
 		#Make sure the default selection is sane and set the appropriate things in the next model run instance
 		self.prepare_model_run()
 
@@ -538,7 +545,7 @@ class Synchronizer(object):
 
 	def modelname_changed(self):
 		"""Model name is changed, big reinit"""
-		if self.controlstate['modelname'] in ['msis','hwm','iri']:
+		if self.controlstate['modelname'] in ['msis','iri']:
 			self.initModelRunner()
 			self.refreshSelectOptions()
 			self.refreshModelRunOptions()
@@ -642,9 +649,14 @@ class Synchronizer(object):
 		#Some of these values will be overwritten
 		#since at least one must be on a plot axes if line plot,
 		#or at least two if a colored plot (pcolor or contour)
-		self.mr.nextrun.vars['Latitude'] = float(self.controlstate['lat'])
-		self.mr.nextrun.vars['Longitude'] = float(self.controlstate['lon'])
-		self.mr.nextrun.vars['Altitude'] = float(self.controlstate['alt'])
+		self.mr.nextrun.vars['Latitude'] = self.controlstate['lat']
+		self.mr.nextrun.vars['Longitude'] = self.controlstate['lon']
+		self.mr.nextrun.vars['Altitude'] = self.controlstate['alt']
+
+		#Handle the case of two variables being set to the same thing:
+		if self.controlstate['xvar'] == self.controlstate['yvar']:
+			raise RuntimeError('X and Y both are %s, cannot make sensible plot!' % (self.controlstate['xvar']))
+		
 
 		#Make sure all position variables have their limits set correctly
 		#before model run so that we end up with the right generated 
@@ -653,7 +665,6 @@ class Synchronizer(object):
 				self.mr.nextrun.vars.lims[self.controlstate['xvar']] = self.controlstate['xbounds']
 		if not self.is_multi('y') and self.is_position('y'): 
 				self.mr.nextrun.vars.lims[self.controlstate['yvar']] = self.controlstate['ybounds']
-			
 
 		#Copy out the drivers from the controlstate (only copy those that are exposed via the model's __init__)
 		self.mr.nextrun.drivers['dt'] = self.controlstate['drivers']['dt']
@@ -718,6 +729,10 @@ class Synchronizer(object):
 		ffr = force_full_refresh
 		fauto = force_autoscale		
 
+		if self.controlstate['plottype'] == 'pcolor' and self.controlstate.changed("xvar") or self.controlstate.changed("yvar"):
+			self.controlstate['run_model_on_refresh']=True
+			self.log.info("We are plotting a pcolor type plot, and x or y was changed, so we will need to re-run the model, since what is held constant has changed")
+
 		if self.controlstate.changed('plottype') or ffr:
 			#Determine if we need to rerun the model
 			oldplottype = self.pdh.plottypes[self.pdh.plottype]
@@ -744,6 +759,7 @@ class Synchronizer(object):
 
 			self.log.info("Datetime was changed since last refresh. Will rerun %s with datetime %s" % (self.controlstate['modelname'],
 				self.mr.nextrun.drivers['dt'].strftime('%c')))
+
 
 		if self.controlstate.changed('lat') or ffr:
 			if 'Latitude' not in [self.controlstate['xvar'],self.controlstate['yvar']]:
@@ -773,6 +789,7 @@ class Synchronizer(object):
 		#Actually prepare for a new run of the model
 		if self.controlstate['run_model_on_refresh'] or ffr:
 			self.log.info("Now preparing next model run, because controlstate variable run_model_on_refresh=True")
+	
 			try: #Attempt to run the model
 				self.prepare_model_run()
 			except RuntimeError as e: #Prepare model run can throw quite a few possible runtime errors based on incorrect variables selection
@@ -838,21 +855,21 @@ class Synchronizer(object):
 
 
 		#Associate data in the data handler based on what variables are desired
-		if self.controlstate.changed('xvar') or self.controlstate.changed('xbounds') or self.controlstate.changed('xlog') or self.controlstate['run_model_on_refresh'] or ffr: 
+		if self.controlstate.changed('modelname') or self.controlstate.changed('xvar') or self.controlstate.changed('xbounds') or self.controlstate.changed('xlog') or self.controlstate['run_model_on_refresh'] or ffr: 
 			xname = self.controlstate['xvar']
 			self.log.info("Associating x variable %s with plot data handler bounds %s, log %s" % (str(xname),
 							str(self.controlstate['xbounds']),str(self.controlstate['xlog'])))
 			self.pdh.associate_data('x',xdata,xname,self.controlstate['xbounds'],self.controlstate['xlog'],
 				multi=self.controlstate['xmulti'],units=xunits,description=xdesc)
 			
-		if self.controlstate.changed('yvar') or self.controlstate.changed('ybounds') or self.controlstate.changed('ylog') or self.controlstate['run_model_on_refresh'] or ffr: 
+		if self.controlstate.changed('modelname') or self.controlstate.changed('yvar') or self.controlstate.changed('ybounds') or self.controlstate.changed('ylog') or self.controlstate['run_model_on_refresh'] or ffr: 
 			yname = self.controlstate['yvar']
 			self.log.info("Associating y variable %s with plot data handler bounds %s, log %s" % (str(yname),
 							str(self.controlstate['ybounds']),str(self.controlstate['ylog'])))
 			self.pdh.associate_data('y',ydata,yname,self.controlstate['ybounds'],self.controlstate['ylog'],
 				multi=self.controlstate['ymulti'],units=yunits,description=ydesc)
 			
-		if self.controlstate.changed('zvar') or self.controlstate.changed('zbounds') or self.controlstate.changed('zlog') or self.controlstate['run_model_on_refresh'] or ffr:
+		if self.controlstate.changed('modelname') or self.controlstate.changed('zvar') or self.controlstate.changed('zbounds') or self.controlstate.changed('zlog') or self.controlstate['run_model_on_refresh'] or ffr:
 			zname = self.controlstate['zvar']
 			self.log.info("Associating z variable %s with plot data handler bounds %s, log %s" % (str(zname),
 							str(self.controlstate['zbounds']),str(self.controlstate['zlog'])))
@@ -870,6 +887,8 @@ class Synchronizer(object):
 			raise 
 
 		self.caption = self.make_caption()
+		#Reinitialize the run_on_refresh setting
+		self.controlstate['run_model_on_refresh'] = False
 
 
 	def make_caption(self):
@@ -949,17 +968,23 @@ class UiHandler(object):
 					retval = mymeth
 					self.log.warn("UNSAFE GET Eval %s = self.controlstate[%s].%s()" % (str(retval),statevar,str(subfield)))
 		#Special cases
+		elif statevar == 'modeldesc':
+			#Get the description of the last run model
+			retval = {'modeldesc':self.mr.runs[-1].modeldesc}
 		elif statevar == 'controlstate':
+			#Get the controlstate as an html table
 			retval=dict()
 			for key in self.controlstate:
 				if self.controlstate.changed(key):
 					retval[key]=self.controlstate.ashtml(key)
 		elif statevar == 'vars':
+			#Get all of the information about the variables as one package
 			retval = dict()
 			for prefix in ['x','y','z']:
 				for suffix in ['var','bounds','units','desc','log']:
 					retval[prefix+suffix] = dict.__getitem__(self.controlstate,prefix+suffix) 
 		elif statevar == 'chartdata':
+			#Get all the data about the drivers needed for the d3 chart
 			retval = dict()
 			for driver in self.controlstate['drivers']:
 				retval[driver] = dict()
@@ -1431,13 +1456,13 @@ class MultiUserAtModWebObj(object):
 		if userid not in self._usernames or self._usernames[userid]=='--pending--':
 			return None
 
-		self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
+		#self.log.info("Request sent to AMWO with userid cookie %s, method %s" % (str(userid),str(cherrypy.request.method)))
 
 		if userid not in self._amwo:
 			self._amwo[userid] = AtModWebObj(parent=self,userid=userid)
 			self.log.info("Spun up new AMWO instance with userid %s, there are now %d instances running" % (str(userid),len(self._amwo.keys())))
 		
-		self.log.debug("Username for id %s is %s" % (str(userid),str(self._usernames[userid])))
+		#self.log.debug("Username for id %s is %s" % (str(userid),str(self._usernames[userid])))
 		return userid
 
 	def get_user_amwo(self):

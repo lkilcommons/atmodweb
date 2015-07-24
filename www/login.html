@@ -8,7 +8,8 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 	<script>
 	$(document).ready(function(){
-		$('#username_button').on("click",function(e){
+
+		authuser = function(e) {
 			var un = $('#username_input').val()
 			
 			if (un.length === 0) {
@@ -22,7 +23,10 @@
 					}
 				})
 			}
-		})
+		} 
+
+		$('#username_button').on("click",authuser)
+		$('#username_input').on("change",authuser)
 	})
 	</script>
 	<body>
