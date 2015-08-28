@@ -1,7 +1,7 @@
 import cherrypy #Python web server
 #Main imports
 import numpy as np
-import sys, pdb, textwrap, datetime,os,time, glob, traceback, time
+import sys, pdb, textwrap, datetime,os,time, glob, traceback, time, shutil, subprocess
 import socket #to figure out our hostname
 import matplotlib as mpl
 mpl.use('Agg')
@@ -178,6 +178,7 @@ class ControlStateManager(object):
 		self.default_controlstate = {'model_index':-1,'datetime':{'year':2000,'month':6,'day':21,'hour':12,'minute':0,'second':0},\
 			'lat':40.0274,'lon':105.2519,'alt':200.,\
 			'plottype':'pcolor',\
+			'descstr':'intial plot','gif_mode':False,\
 			'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50.,'xlog':False,'xmulti':False,'xunits':'deg','xdesc':'Longitude',\
 			'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50.,'ylog':False,'ymulti':False,'yunits':'deg','ydesc':'Geodetic Latitude',\
 			'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
@@ -419,7 +420,6 @@ class Synchronizer(object):
 		self.controlstate.bind_changed('mapproj',self.mapproj_changed)
 		self.controlstate.bind_changed('modelname',self.modelname_changed)
 
-
 	def initModelRunner(self):
 		"""Does a first run of the model specified in the controlstate to make sure that there's a reference run. 
 		A lot of code looks to the previously run model (i.e. to populate the selects for x, y and z)"""
@@ -620,7 +620,7 @@ class Synchronizer(object):
 		if not self.is_multi(coord):
 			return self.controlstate[coord+'var'] in self.mr.nextrun.vars
 		else:
-			return any(v in self.mr.nextrun.vars for v in self.controlstate[coord+'var'])  
+			return any(v in self.mr.nextrun.vars for v in self.controlstate[coord+'var'])
 
 	def prepare_model_run(self):
 		"""
@@ -744,7 +744,7 @@ class Synchronizer(object):
 			self.pdh.plottype=self.controlstate['plottype']
 			self.refreshSelectOptions()
 			
-		if self.controlstate.changed('datetime') or ffr:
+		if self.controlstate.changed('datetime') or self.controlstate.changed('drivers') or ffr:
 			#Force model rerun
 			self.controlstate['run_model_on_refresh']=True
 			try:
@@ -875,6 +875,8 @@ class Synchronizer(object):
 							str(self.controlstate['zbounds']),str(self.controlstate['zlog'])))
 			self.pdh.associate_data('z',zdata,zname,self.controlstate['zbounds'],self.controlstate['zlog'],units=zunits,description=zdesc)
 
+		self.controlstate['descstr']=self.make_descstr()
+
 		#Actually make the plot
 		try:
 			self.pdh.plot()	
@@ -887,13 +889,29 @@ class Synchronizer(object):
 			raise 
 
 		self.caption = self.make_caption()
+		#Make the description string showing what changed since the last plot
+		
 		#Reinitialize the run_on_refresh setting
 		self.controlstate['run_model_on_refresh'] = False
 
+	def make_descstr(self):
+		"""Makes a string which shows how the this controlstate differs from the previous one"""
+		thestr = ''
+		thestr += datetime.datetime(**self.controlstate['datetime']).strftime('%m-%d-%Y %H:%M UT')
+		thestr += '\n'
+		for driver in self.controlstate['drivers']:
+			val = self.controlstate['drivers'][driver]
+			if not isinstance(val,list) and not isinstance(val,dict) and driver is not 'dt':
+				thestr += "%s: %s\n" % (driver,str(self.controlstate['drivers'][driver]))
+		if self.controlstate['plottype'] in ['map','pcolor']:
+			thestr += 'Altitude: %.1f km\n' % (self.controlstate['alt'])
+		thestr = thestr[:-1] # remove trailing newline
+
+		return thestr
 
 	def make_caption(self):
 		"""
-		Writes a caption to go with the latest graph
+		Writes a caption fully describing the latest graph
 		"""
 		#Build a description of the plot
 		return self.pdh.caption()+'|'+str(self.mr.runs[-1])
@@ -1072,6 +1090,12 @@ class UiHandler(object):
 			newfn = self.amwo.canvas.refreshModelRunOptions()
 			self.log.info(ansicolors.HEADER+'POST for posttype:%s successful refresh model run options' % (posttype)+ansicolors.ENDC)
 			return {"refreshmodeloptions":True}
+		elif posttype == 'gifmode':
+			self.controlstate['gif_mode'] = False if self.controlstate['gif_mode'] else True
+			f = None
+			if not self.controlstate['gif_mode']:
+				f = self.amwo.make_gif()
+			return {"gifmode":self.controlstate['gif_mode'],"file":f} 
 		elif posttype == 'debugreinit':
 			#This is extreme measures. Expires the CherryPy session and tries to resync it with a good version of the controlstate
 			self.log.info("Reinitializing controlstate")
@@ -1226,14 +1250,15 @@ class FakeCanvas(object):
 	"""
 	def __init__(self,atmo):		
 		self.atmo = atmo #"parent" atmodwebobject
-		self.fig = pp.figure()
+		self.fig = pp.figure(figsize=(6,4),dpi=200)
 		self.caption = 'caption' # Caption for the figure, created by make_caption 
 		self.ax = self.fig.add_subplot(111)
+		self.textobj = None
 
 	def apply_lipstick(self):
 		"""Called on each replot, allows cosmetic adjustment"""
 		#self.fig.subplots_adjust(left=0.05,bottom=0.05,top=.95,right=.95)
-		fs = 12
+		fs = 9
 		w = .5
 		lw = .3
 		lp = 0
@@ -1250,15 +1275,13 @@ class FakeCanvas(object):
 			self.ax.xaxis.labelpad=lp
 			self.ax.yaxis.labelpad=lp
 			
-			self.ax.title.set_fontsize(fs)
-			self.ax.title.set_fontweight('bold')
-			
 			#Adjust tick size
 			self.ax.xaxis.set_tick_params(width=w,pad=pd)
 			self.ax.yaxis.set_tick_params(width=w,pad=pd)
 
 			#Colorbar Ticks
 			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd+.5)
+			self.atmo.syncher.pdh.cb.ax.xaxis.label.set_fontsize(fs)
 			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd+.5)
 			self.atmo.syncher.pdh.cb.outline.set_linewidth(w)
 
@@ -1267,17 +1290,29 @@ class FakeCanvas(object):
 			for axis in ['top','bottom','left','right']:
 				self.ax.spines[axis].set_linewidth(lw)
 				#self.pdh.cb.spines[axis].set_linewidth(lw)
-					
+
+			self.ax.title.set_fontsize(fs)
+			self.ax.title.set_fontweight('bold')
+			
 		elif self.atmo.syncher.pdh.plottype=='map':
 			#Colorbar Ticks
-			
+			self.ax.title.set_fontsize(fs)
+			self.ax.title.set_fontweight('bold')
+
 			mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
-			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd+.5)
-			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd+.5)
+			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd)
+			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd)
+			self.atmo.syncher.pdh.cb.ax.xaxis.label.set_fontsize(fs)
 			self.atmo.syncher.pdh.cb.outline.set_linewidth(w)
 						#Adjust axes border size
 			for axis in ['top','bottom','left','right']:
 				self.ax.spines[axis].set_linewidth(lw)
+
+	def text(self,*args,**kwargs):
+		"""Displays text on the figure in figure coordinates (0,0) is bottom left, (1,1) is top right"""
+		if self.textobj is not None:
+			self.textobj.remove()
+		self.textobj = self.fig.text(*args,**kwargs)
 
 class AtModWebObj(object):
 	def __init__(self,parent,userid=None):
@@ -1286,6 +1321,7 @@ class AtModWebObj(object):
 		self.userid = userid
 		self.time_created = datetime.datetime.now()
 		self.last_accessed = datetime.datetime.now()
+		self.gif_frames = []
 		self.n_max_plots = 20
 		self.n_total_plots = 0
 		#Start up the rest of the application
@@ -1307,7 +1343,14 @@ class AtModWebObj(object):
 		relfn = os.path.join(self.parent.imgreldir,'amwo_%s_%d.png' % (str(self.userid),
 			int(time.mktime(datetime.datetime.now().timetuple()))))
 		absfn = os.path.join(self.parent.rootdir,relfn)
-		self.canvas.fig.savefig(absfn,dpi=250)
+		if self.controlstate['gif_mode']:
+			self.gif_frames.append(absfn)
+		self.canvas.text(.01,.94,self.controlstate['descstr'],
+			fontsize=8,verticalalignment='top',color='blue',
+			bbox=dict(facecolor='none', edgecolor='blue', boxstyle='round'))
+		self.canvas.fig.savefig(absfn,dpi=200)
+		#self.canvas.fig.clf()
+		#self.canvas.ax = self.canvas.fig.add_subplot(111)
 		#Generate caption
 		cap = self.syncher.caption
 		self.controlstate['thiscaption']=cap
@@ -1323,6 +1366,42 @@ class AtModWebObj(object):
 		self.controlstate() # store the last controlstate as states[-1]
 
 		return relfn, cap
+
+	def make_gif(self,gif='out.gif',delay=20,delete_imgs=False):
+		"""
+		Converts a list of pngs, in order, to frames for a gif
+			imgs - list of valid png or jpg paths
+			gif - gif file to write to
+			tempdir - directory where temporary frame pngs will be stored
+			delay - time in milliseconds each frame will display for
+		"""
+		imgs = self.gif_frames
+		tempdir = os.path.join(self.parent.rootdir,self.parent.imgreldir)
+		#if not is_ImageMagick_Installed():
+		#	raise RuntimeError("ImageMagick appears to not be installed! If on Ubuntu, try sudo apt-get install imagemagick\n")
+		self.log.debug("Now beginning to copy files to temporary frames for gif. Temporary directory is %s...\n" % (tempdir))
+		paddingcode = '%.'+str(len(str(len(imgs))))+'d' #imagemagick needs zero padded frame numbering
+		
+		imgext = os.path.splitext(imgs[0])[-1]
+		tmpimgs = []
+		for i,img in enumerate(imgs):
+			tmpimg = os.path.join(tempdir,"img2gif_frame_"+paddingcode % (i+1)+imgext)
+			shutil.copy(img,tmpimg)
+			tmpimgs.append(tmpimg)
+
+		imcall = "convert -delay %d -loop 0 %s %s" % (delay,os.path.join(tempdir,'img2gif_frame_*'+imgext),os.path.join(tempdir,gif))
+		self.log.debug("Calling ImageMagick to convert frames to gif...")
+		self.log.debug("Call is %s\n" % (imcall))
+		subprocess.check_call(imcall,shell=True)
+
+		self.log.debug("Cleaning up temp files...")
+		for tmpimg in tmpimgs:
+			os.remove(tmpimg)
+
+		self.gif_frames = []
+		return os.path.join(self.parent.imgreldir,gif)
+		#if open_gif:
+		#	subprocess.check_call("xdg-open %s" % (gif))
 
 	def restart(self):
 		#A full scale panic restart
@@ -1416,6 +1495,13 @@ class MultiUserAtModWebObj(object):
 			retstr += '</ul>' 
 		retstr += "</body></html>"
 		return retstr
+	
+	def clean_up(self):
+		"""Kills any instances that haven't been touched in an hour"""
+		for userid in self._amwo:
+			if (datetime.datetime.now() - self._amwo[userid].last_accessed).total_seconds() > 3600:
+				del(self._amwo[userid]) 
+				del(self._usernames[userid])
 
 	#Authorization tool
 	def check_auth(self,*args, **kwargs):
@@ -1527,7 +1613,10 @@ if __name__ == '__main__':
 
 	cherrypy.log.screen = False
 	cherrypy.log.access_log.propagate = False
-  
+  	
+	wd = cherrypy.process.plugins.BackgroundTask(60, webapp.clean_up)
+	wd.start()
+
 	cherrypy.tree.mount(webapp, '/',conf)
 	cherrypy.engine.start()
 	cherrypy.engine.block()

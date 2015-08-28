@@ -764,8 +764,8 @@
 
                 //{"statevar":"datetime","newval":{myname : parseInt(newval)}}
                 var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
-                var autoscale_done = $.ajax({url: "/uihandler",data: {"posttype":"autoscale"},type: "POST"})
-                var plotting = $.when(ajax_done,autoscale_done).then($("#plotbutton").triggerHandler("click"))
+                //var autoscale_done = $.ajax({url: "/uihandler",data: {"posttype":"autoscale"},type: "POST"})
+                var plotting = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
                 return plotting
                 //return $.when(ajax_done).then(autoscale_done)
             });
@@ -787,7 +787,7 @@
                         $cblog(1,e,"FAILED on refreshnow POST, error was "+jqxhr.responseText)
                         var getting_error = $.ajax({url: "/uihandler", data: {"statevar":"lasterror"},type: "GET",
                             success: function (json) {
-                                alert("Oops, I couldn't refresh your plot. Please check that your selections make sense.\n"+String(json['lasterror']))
+                                alert("Oops, I couldn't refresh your plot. Please check that your selections make sense.\n "+String(json['lasterror']))
                             $("#plotimg").attr("src","/www/error.png").fadeIn(200)
                             }
                         })
@@ -1445,6 +1445,19 @@
             if(e.which == 77) {
                 // M press
                 $(".model").toggle()
+            }
+            if(e.which == 71) {
+                //G press
+                var gif_mode_on = $.ajax({url: "/uihandler", data: {"posttype":"gifmode"},type: "POST",
+                    success: function(json) {
+                            if ( !json['gifmode'] ) {
+                                window.location.replace(json['file'])
+                            } else {
+                                alert('Beginning GIF animation compilation. Any further plots will be added to GIF, until you press Shift+G, which will take you to your GIF')    
+                            }                            
+                        }
+                    })
+
             }
         });
         
