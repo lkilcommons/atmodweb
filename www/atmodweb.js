@@ -1247,7 +1247,7 @@
             });
 
             //Implement mutual exclusivity of drivers and dates
-            $("#manualpanel").on("click", function (e){
+            $("#manualpanel_title").on("click", function (e){
                 $("#manualpanel_title").text("Manual Driver Entry")
                 var animating1 = $("#manualpanel_controls").slideDown()
                 $("#datepanel_title").text("Click to Look Up Solar Activity By Date")
@@ -1256,7 +1256,7 @@
                 return $.when(animating2,animating1,ajaxing)
             })
 
-            $("#datepanel").on("click", function (e){
+            $("#datepanel_title").on("click", function (e){
                 $("#manualpanel_title").text("Click to Specify Solar Activity Manually")
                 var animating1 = $("#manualpanel_controls").slideUp()
                 $("#datepanel_title").text("Date and Time")

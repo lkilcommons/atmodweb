@@ -280,7 +280,7 @@ class ControlStateManager(object):
 		self.log.debug("Overwriting working controlstate with default values.")
 		for key in self.default_controlstate:
 			self.controlstate[key]=self.default_controlstate[key]	
-	
+		self.controlstate.sync = True
 
 	def changed(self,key=None):
 		"""
@@ -749,6 +749,7 @@ class Synchronizer(object):
 			self.controlstate['run_model_on_refresh']=True
 			try:
 				self.mr.nextrun.drivers['dt'] = datetime.datetime(**self.controlstate['datetime'])
+
 			except:
 				#Capture the error for retrieval by the frontend failure callback
 				self.log.error("Badly formed time! Calling controlstate error function")
