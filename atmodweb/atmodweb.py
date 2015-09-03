@@ -1586,6 +1586,7 @@ if __name__ == '__main__':
 			 'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
 			 'tools.response_headers.on': True,
 			 'tools.response_headers.headers': [('Content-Type', 'application/json')],
+
 		 },
 		 '/www': {
 			 'tools.staticdir.on': True,

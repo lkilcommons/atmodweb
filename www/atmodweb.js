@@ -99,7 +99,7 @@
                 $("#loading_progress_label").text("Done!")
                 $("#loading_progress").progressbar("disable")
                 $("#wrap").fadeIn(500)
-                $("#loading").fadeOut(500)   
+                $("#loading").fadeOut(500)
             }
 
             
@@ -1335,7 +1335,7 @@
                                     return $.when_all_trigger($all_var_bounds,"focus")
                                 })
                             .then($("#dynamicdriverdiv").triggerHandler("click"))
-                            .then($("#datepanel").triggerHandler("click"))
+                            .then($("#datepanel_title").triggerHandler("click"))
                             .done(
                                 function (stuff) {
                                 //Very last thing we do is take away the loading gif
