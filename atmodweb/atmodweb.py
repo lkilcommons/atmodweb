@@ -783,6 +783,12 @@ class Synchronizer(object):
 				#We are holding altitude constant, so we will have to rerun the model
 				self.controlstate['run_model_on_refresh'] = True
 		
+		#If the altitude boundaries were changed
+		if (self.controlstate['xvar']=='Altitude' and self.controlstate.changed('xbounds')) or\
+			(self.controlstate['yvar']=='Altitude' and self.controlstate.changed('ybounds')):
+			self.log.info("Altitude boundaries changed and altitude is X or Y variable, will rerun model")
+			self.controlstate['run_model_on_refresh'] = True
+
 		if self.controlstate.changed('differencemode'):
 			self.controlstate['run_model_on_refresh'] = True
 
@@ -1309,6 +1315,15 @@ class FakeCanvas(object):
 			for axis in ['top','bottom','left','right']:
 				self.ax.spines[axis].set_linewidth(lw)
 
+		elif self.atmo.syncher.pdh.plottype=='line':
+			self.ax.title.set_fontsize(fs)
+			self.ax.title.set_fontweight('bold')
+			mpl.artist.setp(self.atmo.syncher.pdh.ax.get_xmajorticklabels(),size=fs,rotation=45)
+						#Adjust axes border size
+			for axis in ['top','bottom','left','right']:
+				self.ax.spines[axis].set_linewidth(lw)
+
+
 	def text(self,*args,**kwargs):
 		"""Displays text on the figure in figure coordinates (0,0) is bottom left, (1,1) is top right"""
 		if self.textobj is not None:
@@ -1348,7 +1363,7 @@ class AtModWebObj(object):
 			self.gif_frames.append(absfn)
 		self.canvas.text(.01,.94,self.controlstate['descstr'],
 			fontsize=8,verticalalignment='top',color='blue',
-			bbox=dict(facecolor='none', edgecolor='blue', boxstyle='round'))
+			bbox=dict(facecolor='white', edgecolor='blue', boxstyle='round',alpha=.8))
 		self.canvas.fig.savefig(absfn,dpi=200)
 		#self.canvas.fig.clf()
 		#self.canvas.ax = self.canvas.fig.add_subplot(111)
@@ -1417,12 +1432,16 @@ class AtModWebObj(object):
 		self.replot()
 		
 
+
 class UiDispatcher(object):
 	"""Just dispatches requests to the approriate uihandler as specified by the userid cookie"""
 
 	exposed = True
 
 	def __init__(self,muamwo):
+		#This needs to be done here (before the UiDispatcher is created) so that CherryPy
+		#knows that tools.auth is a thing before it's used in UiDispatcher 
+		
 		self.muamwo = muamwo
 
 	def get_uihandler(self):
@@ -1509,6 +1528,7 @@ class MultiUserAtModWebObj(object):
 		"""A tool that looks for a userid cookie, and makes sure that the cookie has an entry in the _usernames"""
 		reqcookie = cherrypy.request.cookie
 		if 'userid' not in reqcookie:
+			#No userid set
 			userid = self.newuserid() #Create a new userid and assign it to the user
 			self._usernames[userid] = '--pending--'
 			respcookie = cherrypy.response.cookie
@@ -1516,6 +1536,7 @@ class MultiUserAtModWebObj(object):
 			respcookie['userid']['max-age']=3600
 			raise cherrypy.HTTPRedirect("/login")
 		else:
+			#No username registered to userid
 			userid = reqcookie['userid'].value
 			if userid not in self._usernames:
 				self._usernames[userid] = '--pending--'
@@ -1566,7 +1587,7 @@ if __name__ == '__main__':
 		
 
 	webapp = MultiUserAtModWebObj()
-	cherrypy.tools.auth = cherrypy.Tool('before_handler', webapp.check_auth)
+	cherrypy.tools.auth = cherrypy.Tool('before_handler',webapp.check_auth)
 	conf = {
 		 '/': {
 			'tools.sessions.on': True,
