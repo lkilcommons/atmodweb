@@ -910,8 +910,15 @@ class Synchronizer(object):
 			val = self.controlstate['drivers'][driver]
 			if not isinstance(val,list) and not isinstance(val,dict) and driver is not 'dt':
 				thestr += "%s: %s\n" % (driver,str(self.controlstate['drivers'][driver]))
-		if self.controlstate['plottype'] in ['map','pcolor']:
-			thestr += 'Altitude: %.1f km\n' % (self.controlstate['alt'])
+		held_positionvars = ['Altitude','Latitude','Longitude']
+		controlstate_positions = ['alt','lat','lon']
+		for coord in ['x','y']:
+			if self.is_position(coord):
+				i = held_positionvars.index(self.controlstate[coord+'var'])
+				held_positionvars.pop(i)
+				controlstate_positions.pop(i)
+		for i in range(len(held_positionvars)):
+			thestr+='%s: %.2f\n' % (held_positionvars[i],self.controlstate[controlstate_positions[i]])
 		thestr = thestr[:-1] # remove trailing newline
 
 		return thestr
@@ -922,6 +929,15 @@ class Synchronizer(object):
 		"""
 		#Build a description of the plot
 		return self.pdh.caption()+'|'+str(self.mr.runs[-1])
+
+	def data_as_csv(self):
+		"""
+		Render the current plot's data as a CSV string
+		"""
+		coords = ['x','y'] if self.controlstate['plottype']=='line' else ['x','y','z']
+		vs = [self.controlstate[coord+'var'] for coord in coords]
+		data,header = self.mr.runs[-1].as_csv(vs)
+		return data,header
 
 class UiHandler(object):
 	"""
@@ -992,7 +1008,6 @@ class UiHandler(object):
 					mymeth = getattr(self.controlstate[statevar],subfield)
 					retval = mymeth
 					self.log.warn("UNSAFE GET Eval %s = self.controlstate[%s].%s()" % (str(retval),statevar,str(subfield)))
-		#Special cases
 		elif statevar == 'modeldesc':
 			#Get the description of the last run model
 			retval = {'modeldesc':self.mr.runs[-1].modeldesc}
@@ -1306,7 +1321,7 @@ class FakeCanvas(object):
 			self.ax.title.set_fontsize(fs)
 			self.ax.title.set_fontweight('bold')
 
-			mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
+			mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=35)
 			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd)
 			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd)
 			self.atmo.syncher.pdh.cb.ax.xaxis.label.set_fontsize(fs)
@@ -1318,7 +1333,9 @@ class FakeCanvas(object):
 		elif self.atmo.syncher.pdh.plottype=='line':
 			self.ax.title.set_fontsize(fs)
 			self.ax.title.set_fontweight('bold')
-			mpl.artist.setp(self.atmo.syncher.pdh.ax.get_xmajorticklabels(),size=fs,rotation=45)
+			if self.atmo.syncher.pdh.ax.get_legend() is not None:
+				mpl.artist.setp(self.atmo.syncher.pdh.ax.get_legend().get_texts(),size=fs)
+			mpl.artist.setp(self.atmo.syncher.pdh.ax.get_xmajorticklabels(),size=fs,rotation=35)
 						#Adjust axes border size
 			for axis in ['top','bottom','left','right']:
 				self.ax.spines[axis].set_linewidth(lw)
@@ -1515,7 +1532,14 @@ class MultiUserAtModWebObj(object):
 			retstr += '</ul>' 
 		retstr += "</body></html>"
 		return retstr
-	
+
+	@cherrypy.expose
+	def data(self):
+		cherrypy.response.headers['Content-Type']= 'text/csv'
+		uid = self.get_userid()
+		data,header = self.get_user_amwo().syncher.data_as_csv()
+		return header+'\n'+data
+
 	def clean_up(self):
 		"""Kills any instances that haven't been touched in an hour"""
 		for userid in self._amwo:

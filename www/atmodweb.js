@@ -847,6 +847,13 @@
                 })
             });
 
+            //Handle clicking the "Download Data" button
+            //---------------------------------------------------
+            $('#databutton').on("click", function (e){
+                $cblog(5,e,"In databutton callback")
+                window.open('/data')
+            });
+
             //This function operates on a dynamic driver chart data
             //object and finds the F10.7 and 81 day F10.7 average, and
             //computes the estimated EUV flux using the formula:

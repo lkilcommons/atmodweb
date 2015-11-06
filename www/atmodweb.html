@@ -47,8 +47,8 @@
                 </div>
 
                 <div ID="datepanel" class="panel">
-                    <h2 ID="datepanel_title" class="h2title">Date and Time</h2>
-                    <div ID="datepanel_controls" title="Input the time and date for which to run the model here. Solar wind drivers will be looked up from a database for the date and the sun's position will be determined by the date and time">
+                    <h2 ID="datepanel_title" class="h2title"  title="Input the date and time of day for the model run here. Drivers will be looked up for your date.">Date and Time</h2>
+                    <div ID="datepanel_controls">
                         <p>Year-Month-Day</p>
                         <input type="text" name="year" title="Year" value="2000" size="4" class="dateinput"><span><strong>-</strong></span>
                         <input type="text" name="month" title="Month" value="06" size="2" class="dateinput"><span><strong>-</strong></span>
@@ -61,8 +61,8 @@
                 
                 
                 <div ID="manualpanel" class="panel">
-                    <h2 ID="manualpanel_title" class="h2title">Manual Driver Entry</h2>
-                    <div ID="manualpanel_controls" title="You can change the solar activity parameters that are fed to the model here">
+                    <h2 ID="manualpanel_title" title="You can change the solar activity parameters that are fed to the model here" class="h2title">Manual Driver Entry</h2>
+                    <div ID="manualpanel_controls">
                         <div ID="dynamicdriverdiv" class="initialize_me">
 
                         </div>
@@ -169,6 +169,7 @@
 
                         <div ID="plot_right_controls">
                             <button ID="autoscalebutton" class="plotcontrols"> Autoscale Graph</button>
+                            <button ID="databutton" class="plotcontrols">Download Data</button>
                         </div>
 
                         <div ID="plot_progress"><div ID="plot_progress_label">Running Model...</div></div>
