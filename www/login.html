@@ -8,17 +8,27 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 	<script>
 	$(document).ready(function(){
+		
+		function validateEmail(email) {
+    	var re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    	return re.test(email);
+		}
 
+		if (Date.now() < Date.parse("12 25 2015")) {
+			/* Animate a welcome message for AGU */
+			$('#agu_div').slideDown(2000);
+		}
+		
 		authuser = function(e) {
 			var un = $('#username_input').val()
-			
-			if (un.length === 0) {
+			var em = $('#email_input').val()
+
+			if (un.length === 0 || !validateEmail(em)) {
 				e.preventDefault(); //Prevent the form being submitted
-				alert("Please enter a username!")
+				alert("Please enter a username and a valid email address!")
 			} else {
 				var doingthething = $.ajax({url: "/uihandler",data: {"posttype":"authenticate_"+String(un)},type: "POST",dataType:"json",
 					success : function (json) {
-						alert("Succesfully logged in as "+String(un)+"!")
 						window.location.replace('/index')
 					}
 				})
@@ -26,10 +36,12 @@
 		} 
 
 		$('#username_button').on("click",authuser)
-		$('#username_input').on("change",authuser)
+		$('#email_input').on("change",authuser)
+		
 	})
 	</script>
 	<body>
+
 	    <div ID = "titlewrap" class="panel">
 	        <div ID = "titlepanel">
 	            <h1 class="h1title">Atmospheric Model Web Explorer (AtModWeb)</h1>
@@ -38,16 +50,30 @@
 	                <a href='http://ccar.colorado.edu/seda'><img class="branding" alt="SEDA logo" src="www/seda_banner_short_crop.png" ></img></a>
 	                <a href='http:/www.colorado.edu/aerospace/'><img class="branding" alt="CU Aerospace logo" src="www/cu-aero.jpg" ></img></a>
 	        </div>
+	        
 	    </div>
 
 	    <div ID = "login" class="panel">
-	        <h2 ID = "greeting">Hi, and welcome to AtModweb</h2>
-	        <p> To use atmodweb, you will need to provide a username. You won't need a password, and I'll remember what you've plotted for about an hour. If you want to keep your plots for longer than that, please right-click and select "Save as..." to save the plot as an image file.
-	        </p>
-    		<label ID = 'username_label'>Username:
-	        	<input ID = 'username_input' type='text' name='username'> 
-	        </label> 
-	        <button ID = 'username_button' name='username_button' title="Go to atmodweb">Go!</button>
+	  		<div ID = "agu_div">
+	    		<h1 ID = "aug_title">Welcome <a style="color: #122F5E; font-size:largest;" href="https://agu.confex.com/agu/fm15/meetingapp.cgi/Paper/68486">AGU Fall Meeting 2015</a> Attendees!</h1>
+	    	</div>
+	        <h1 class="h1title"> Welcome to AtModWeb! </h1>
+	        <p class="login"> To use atmodweb, you will need to provide a username and an email address.</p>
+	        <p class="login">Your email address will not be stored or used but will be checked for validity (to prevent abuse)</p>
+	        
+	        <div ID='login_form_div'>
+	    		<label ID = 'username_label'>Username:
+		        	<input ID = 'username_input' type='text' name='username'> 
+		        </label>
+		        <label ID = 'email_label'>Email Address:
+		        	<input ID = 'email_input' type='text' name='emailaddress'> 
+		        </label> 
+		        <button ID = 'username_button' name='username_button' title="Go to atmodweb">Go!</button>
+
+	        </div>
+	        <div ID='important_div' class="login">
+	        <strong>IMPORTANT</strong>: AtModWeb only stores your work for one hour.
+	        If want to keep your plots for longer than that, please <em>right-click on the plot and select "Save as..."</em> to save the plot as an image file.</div>
 	    </div>
     </body>
 </html>

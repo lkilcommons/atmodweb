@@ -1305,7 +1305,7 @@
             //Chain together synching and getting_username, remember that .then returns another deferred (or maybe a promise?)
             var synching = getting_username.then($.ajax({url: "/uihandler", data: {"posttype":"uiready"},type: "POST"}))
             //synching is a 'Promise'...a read-only Deferred
-            synching.done(starting_up.notify('Syncing...',20))
+            synching.done(starting_up.notify('Syncing...(if this seems to take forever, try refreshing the browser)',20))
             
             //--Set initial plot
             var initial_plot = $.when(synching).then(function (thedata) {

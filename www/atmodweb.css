@@ -229,6 +229,48 @@ td, th {
   padding: 0.01rem;
 }
 
+#agu_div {
+	margin: 0 0;
+	padding: .1em;
+	display: none;
+	border-radius: 5px;
+	background-color: #E18628;
+	text-align: center;
+	color: #FFF;
+}
+
+#agu_div h1{
+	padding: 0 0;
+	margin: 0 0;
+	font-size: larger;
+}
+
+/* Style specifically for Login Page */
+#login_form_div {
+	padding: 1em;
+	border-radius: 5px;
+	text-align: center;
+	background-color: #604A53;
+}
+
+p.login {
+	text-align: center;
+}
+
+#important_div {
+	display: none;
+	background-color: #A8E1AD;
+	text-align: center;
+	padding: .5em;
+	border-radius: 5px;
+	color: #3D3D7F;
+}
+
+
+
+label,input.login{
+	display: inline;
+}
 
 /**
  * Tooltip Styles
