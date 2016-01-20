@@ -998,7 +998,8 @@
                             
                             $.each(json["drivers"], function(key,value) {
                                 //Check if the input type is date or array
-                                if ( key === 'dt' || $.isArray(value) ){ 
+                                //if ( key === 'dt' || $.isArray(value) ){
+                                if ( $.isArray(value) ){
                                     return true; //Forces jQuery to skip this loop iteration   
                                 }
                                 $cblog(5,e,"Adding driver "+key+" : "+value)
@@ -1251,6 +1252,12 @@
                         }
                     })
                 }
+            });
+
+            //Bind a click handler to the logout button
+            $("#help").on("click",function(e) {
+                e.preventDefault();
+                window.location.replace("/docs/index.html")
             });
 
             //Implement mutual exclusivity of drivers and dates

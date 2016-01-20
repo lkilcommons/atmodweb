@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Getting Started Using AtModWeb &mdash; AtModWeb 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="AtModWeb 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
+    <link rel="prev" title="Welcome to the Documentation for AtModWeb" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="faq.html" title="Frequently Asked Questions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the Documentation for AtModWeb"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started-using-atmodweb">
+<h1>Getting Started Using AtModWeb<a class="headerlink" href="#getting-started-using-atmodweb" title="Permalink to this headline">¶</a></h1>
+<p>We designed AtModWeb to be intuitive and easy to use, but this guide will help you get started if you&#8217;re stuck.</p>
+<p>The main think to remember is the interface is designed to be explored. If you don&#8217;t understand what something does, mouse over it, or click it and see. You can always click the &#8216;Restart&#8217; button if things go wrong.</p>
+</div>
+<div class="section" id="how-to-make-a-plot">
+<span id="how-to-make-graphs"></span><h1>How To Make A Plot<a class="headerlink" href="#how-to-make-a-plot" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="map">
+<h2>Map<a class="headerlink" href="#map" title="Permalink to this headline">¶</a></h2>
+<p>This is a 2 dimensional plot, which means that the program will run the model for a grid of latitude and longitude points at a FIXED ALTITUDE. This will show you how the quantity you are investigating varies over the entire atmosphere. It will draw your data over outlines of all of the continents in, by default a <a class="reference external" href="https://en.wikipedia.org/wiki/Mollweide_projection">Mollweide</a> projection, which is a type of map which tries to visualize the 3D earth in a way that accurately represent relative size (remember how huge Greenland looks in some maps? It&#8217;s not actually that big, that&#8217;s the projection&#8217;s fault).</p>
+<p>You only have two choices when you are making a map:</p>
+<ol class="arabic simple">
+<li>What model output variable you want to look at (Temperature,Density,Amount of Oxygen, etc.)</li>
+<li>The Altitude, in kilometers, that you want to run the model at.</li>
+</ol>
+<p>Example:
+Say you want to investigate where on earth you would expect a spacecraft in low earth orbit to encounter the most wind resistance (A.K.A <a class="reference external" href="http://www.swpc.noaa.gov/impacts/satellite-drag">satellite drag</a>), then you would choose your altitude to be 400 km, and your &#8216;Color&#8217; variable to be &#8216;dens&#8217;, for the density of the atmosphere. Wherever the density was higher than average, the spacecraft would experience greater drag.</p>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="_images/map_example.png"><img alt="map to buried treasure" src="_images/map_example.png" style="width: 600.0px; height: 400.0px;" /></a>
+<p class="caption"><span class="caption-text">Example of AtModWeb output graph for the satellite drag example, the temperature at a constant altitude of 400 km.</span></p>
+</div>
+</div>
+<div class="section" id="cross-section">
+<h2>Cross-Section<a class="headerlink" href="#cross-section" title="Permalink to this headline">¶</a></h2>
+<p>A cross-section plot (sometimes called a heatmap or pseudocolor plot) is another type of 2 dimensional plot, which lets you visualize how the model result you are looking at (Temperature, Atmospheric Density, etc.) organizes in a slice of the atmosphere. This means that the program creates a grid of points a all altitudes along a line of latitude or longitude and then plots the output of the model along this slice. This lets you see trends that depend both on how high you are in the atmosphere, and where you are on the earth.</p>
+<div class="figure" id="id2">
+<a class="reference internal image-reference" href="_images/cross-section_example.png"><img alt="map to buried treasure" src="_images/cross-section_example.png" style="width: 600.0px; height: 400.0px;" /></a>
+<p class="caption"><span class="caption-text">An example of a cross-section plot. Note that the upper atmosphere is much hotter than the lower atmosphere, and that the equator is hotter than either of the poles. This example is for the peak of summer (solstice).</span></p>
+</div>
+</div>
+<div class="section" id="line">
+<h2>Line<a class="headerlink" href="#line" title="Permalink to this headline">¶</a></h2>
+<p>A line plot is simply an X vs. Y plot. One of the variables, either X or Y, must be one of the locations (Altitude,Latitude,or Longitude), because it doesn&#8217;t make sense to draw the line that relates temperature to density. Since you vary one of the location variables, the other two must, by definition, be fixed.
+For example, if you wanted to see how the atmospheric temperature changes for a balloon launched on a windless day over the University of Colorado, in Boulder you would enter 40.0274 and 105.2519 in the latitude and longitude controls, and change the Y selector to be &#8216;Altitude&#8217;, and the X variable selector to be &#8216;Temperature&#8217;, and then click &#8216;Plot&#8217;.</p>
+<div class="figure" id="id3">
+<a class="reference internal image-reference" href="_images/line_example.png"><img alt="map to buried treasure" src="_images/line_example.png" style="width: 600.0px; height: 400.0px;" /></a>
+<p class="caption"><span class="caption-text">An example of a line plot, showing the altitude profile of atmospheric temperature above Boulder, Colorao.</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="how-to-download-model-results">
+<span id="how-to-download-data"></span><h1>How To Download Model Results<a class="headerlink" href="#how-to-download-model-results" title="Permalink to this headline">¶</a></h1>
+<p>The &#8216;Download&#8217; button just above your plot will download all of the data that went into your plot as a comma seperated value (<a class="reference external" href="https://en.wikipedia.org/wiki/Comma-separated_values">CSV</a>) file. The number of columns and thier identity depends on what you were plotting. For example, a map plot or cross-section will have 3 columns, latitude, longitude and whatever model output variable you&#8217;re visualizing. Line plots may have 2 or more columns depending on how many variables you have chosen to plot.</p>
+<div class="figure" id="id4">
+<a class="reference internal image-reference" href="_images/screenshot_download_example.png"><img alt="map to buried treasure" src="_images/screenshot_download_example.png" style="width: 949.2px; height: 541.8px;" /></a>
+<p class="caption"><span class="caption-text">Click the <em>Download</em> button to download a CSV file. In this case it would have 2 columns, Altitude and Temperature.</span></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started Using AtModWeb</a></li>
+<li><a class="reference internal" href="#how-to-make-a-plot">How To Make A Plot</a><ul>
+<li><a class="reference internal" href="#map">Map</a></li>
+<li><a class="reference internal" href="#cross-section">Cross-Section</a></li>
+<li><a class="reference internal" href="#line">Line</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-download-model-results">How To Download Model Results</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to the Documentation for AtModWeb</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="faq.html"
+                        title="next chapter">Frequently Asked Questions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/quickstart.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="faq.html" title="Frequently Asked Questions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the Documentation for AtModWeb"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Liam Kilcommons (CU Boulder Aerospace / CCAR SEDA).
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

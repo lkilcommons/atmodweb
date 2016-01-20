@@ -221,7 +221,8 @@ img{
 	
 table{
 	border-collapse: collapse;
-	font-size: 7pt;
+	font-size: 12pt;
+	color: #DDD;
 }
 
 td, th {

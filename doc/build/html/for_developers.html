@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>For Developers &mdash; AtModWeb 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="AtModWeb 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="AtModWeb Deployment on Digital Ocean" href="deployment.html" />
+    <link rel="prev" title="Models Available in AtModWeb" href="models.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="AtModWeb Deployment on Digital Ocean"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="Models Available in AtModWeb"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="for-developers">
+<h1>For Developers<a class="headerlink" href="#for-developers" title="Permalink to this headline">¶</a></h1>
+<p>AtModWeb used the atmodbackend module of the QT version of this GUI, AtModExplorer</p>
+<span class="target" id="synchronizerauto"></span><dl class="class">
+<dt id="atmodweb.Synchronizer">
+<em class="property">class </em><code class="descclassname">atmodweb.</code><code class="descname">Synchronizer</code><span class="sig-paren">(</span><em>canvas</em>, <em>uihand</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atmodweb.html#Synchronizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atmodweb.Synchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reacts to UiHandler PUT changes in the controlstate via the bound methods
+Also has methods which are called by UiHandler POST
+Prepares Model Runs and Refreshes the FakeCanvas figure via PlotDataHandler</p>
+</dd></dl>
+
+<span class="target" id="fakecanvasauto"></span><dl class="class">
+<dt id="atmodweb.FakeCanvas">
+<em class="property">class </em><code class="descclassname">atmodweb.</code><code class="descname">FakeCanvas</code><span class="sig-paren">(</span><em>atmo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atmodweb.html#FakeCanvas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atmodweb.FakeCanvas" title="Permalink to this definition">¶</a></dt>
+<dd><p>The FakeCanvas is the workhorse of the backend of AtModWeb. It&#8217;s called a FakeCanvas because of the project this 
+was based off of, the AtModExplorer. This takes the place of the matplotlib canvas subclass, that 
+preformed a similar function in atmodexplorer.
+It is a matplotlib canvas in the sense that it has one matplotlib figure at self.fig, and an axes at self.ax. But
+otherwise it&#8217;s just a convenient way of organizing the code and has nothing to do with Matplotlib.
+It&#8217;s important parameters are the PlotDataHandler instance as self.pdh, and the ControlState instance at self.controlstate
+It&#8217;s parent, the AtModWebObj that ties the application together is at self.atmo. It shares it&#8217;s controlstate with the UiHandler,
+which handles requests.</p>
+</dd></dl>
+
+<span class="target" id="atmodwebobjauto"></span><dl class="class">
+<dt id="atmodweb.AtModWebObj">
+<em class="property">class </em><code class="descclassname">atmodweb.</code><code class="descname">AtModWebObj</code><span class="sig-paren">(</span><em>parent</em>, <em>userid=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atmodweb.html#AtModWebObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atmodweb.AtModWebObj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The AtModWebObj class is a representation of a single user session of AtModWeb.
+It includes all of the pieces required for a user with the AtModWeb webpage open in their browser
+to generate plots and interact with the data.</p>
+</dd></dl>
+
+<span class="target" id="controlstateauto"></span><dl class="class">
+<dt id="atmodweb.ControlState">
+<em class="property">class </em><code class="descclassname">atmodweb.</code><code class="descname">ControlState</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atmodweb.html#ControlState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atmodweb.ControlState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subclass dict to make a dictionary that handles synchronizing with the cherrypy session before getting and after setting</p>
+<p>TODO Document Controlstate</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="models.html"
+                        title="previous chapter">Models Available in AtModWeb</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="next chapter">AtModWeb Deployment on Digital Ocean</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/for_developers.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="AtModWeb Deployment on Digital Ocean"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="models.html" title="Models Available in AtModWeb"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Liam Kilcommons (CU Boulder Aerospace / CCAR SEDA).
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 import cherrypy #Python web server
 #Main imports
 import numpy as np
-import sys, pdb, textwrap, datetime,os,time, glob, traceback, time, shutil, subprocess
+import sys, pdb, textwrap, datetime,os,time, glob, traceback, time, shutil, subprocess, gc
 import socket #to figure out our hostname
 import matplotlib as mpl
 mpl.use('Agg')
@@ -177,7 +177,7 @@ class ControlStateManager(object):
 		self.states = [] #List of controlstates
 		self.default_controlstate = {'model_index':-1,'datetime':{'year':2000,'month':6,'day':21,'hour':12,'minute':0,'second':0},\
 			'lat':40.0274,'lon':105.2519,'alt':200.,\
-			'plottype':'pcolor',\
+			'plottype':'map',\
 			'descstr':'intial plot','gif_mode':False,\
 			'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50.,'xlog':False,'xmulti':False,'xunits':'deg','xdesc':'Longitude',\
 			'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50.,'ylog':False,'ymulti':False,'yunits':'deg','ydesc':'Geodetic Latitude',\
@@ -224,12 +224,12 @@ class ControlStateManager(object):
 		self.restore(self.lastind) #Restore that controlstate
 		
 	def __contains__(self, key):
-		"""Make sure we can use 'in' with this, by pass all in calls through to the current controlstate, or,
+		"""Make sure we can use 'in' with this, by passing all in calls through to the current controlstate, or,
 		if it's an exception key which has special behaviour when used in getting and setting, it will be in self.special_keys"""
 		if key not in self.special_keys:
 			return key in self.controlstate
 		else:
-			return True
+			return True #TODO - Check if this is right...shouldn't this be key in self.controlstate?
 
 	def __call__(self):
 		#If we've gotten here, it's because we successfully refreshed, so this is an okay set of controlstate settings
@@ -515,7 +515,6 @@ class Synchronizer(object):
 		self.controlstate['zunits']=zunits
 		self.controlstate['zdesc']=zdesc
 
-
 	def xbounds_changed(self):
 		"""Function which is called whenever the xbounds are changed in the controlstate. Changes limits for next model run"""
 		if not self.is_multi('x') and self.is_position('x'): 
@@ -624,8 +623,7 @@ class Synchronizer(object):
 
 	def prepare_model_run(self):
 		"""
-		Determines which position variables (lat,lon, or alt) are co
-		 nstant,
+		Determines which position variables (lat,lon, or alt) are constant,
 		given the current settings of the xvar, yvar and zvar.
 		
 		Tells the ModelRun instance that is about to be populated with data,
@@ -644,11 +642,13 @@ class Synchronizer(object):
 	
 		#Begin by assigning all of the position variables their approprate output
 		#from the controls structure. These are all single (scalar) values set by
-		#the QLineEdit widgets for Lat, Lon and Alt.
-		#Everything is GEODETIC, not GEOCENTRIC, because that's what MSISf expects.
-		#Some of these values will be overwritten
-		#since at least one must be on a plot axes if line plot,
-		#or at least two if a colored plot (pcolor or contour)
+		#the frontend HTML elements for Lat, Lon and Alt.
+		#Everything is GEODETIC, not GEOCENTRIC, because that's what MSIS expects.
+		#Some of these position variables will be ignored
+		#since one must be on a plot axes if line plot,
+		#or two if a colored plot (pcolor or map)
+		#These values will be the values for their associated
+		#position variable if it is not one of the axes of the plot 
 		self.mr.nextrun.vars['Latitude'] = self.controlstate['lat']
 		self.mr.nextrun.vars['Longitude'] = self.controlstate['lon']
 		self.mr.nextrun.vars['Altitude'] = self.controlstate['alt']
@@ -657,7 +657,6 @@ class Synchronizer(object):
 		if self.controlstate['xvar'] == self.controlstate['yvar']:
 			raise RuntimeError('X and Y both are %s, cannot make sensible plot!' % (self.controlstate['xvar']))
 		
-
 		#Make sure all position variables have their limits set correctly
 		#before model run so that we end up with the right generated 
 		#grid 
@@ -670,7 +669,6 @@ class Synchronizer(object):
 		self.mr.nextrun.drivers['dt'] = self.controlstate['drivers']['dt']
 
 		#Now we determine from the plottype if we need to grid x and y
-		
 		if self.plotProperty('gridxy'):
 			#Fault checks
 			if not self.is_position('x'): #vars dict starts only with position and time
@@ -720,11 +718,10 @@ class Synchronizer(object):
 
 		The basic outline is that check what controlstate values have changed
 		since the last time it was called, and determines based on that
-		how to tell the PlotDataHandler how to plot the users desired image.
+		how to tell the PlotDataHandler how to plot the user's desired image.
 
 		Does not neccessarily create a new model run. Tries to determine if
 		one is needed by the controlstate differences since last referesh.
-
 		"""
 		ffr = force_full_refresh
 		fauto = force_autoscale		
@@ -795,7 +792,7 @@ class Synchronizer(object):
 		#---------------------------------------------------------------------------------------------------------------------------------------
 		#Actually prepare for a new run of the model
 		if self.controlstate['run_model_on_refresh'] or ffr:
-			self.log.info("Now preparing next model run, because controlstate variable run_model_on_refresh=True")
+			self.log.info("Now preparing next model run, because controlstate variable run_model_on_refresh==True")
 	
 			try: #Attempt to run the model
 				self.prepare_model_run()
@@ -1263,12 +1260,11 @@ class FakeCanvas(object):
 	The FakeCanvas is the workhorse of the backend of AtModWeb. It's called a FakeCanvas because of the project this 
 	was based off of, the AtModExplorer. This takes the place of the matplotlib canvas subclass, that 
 	preformed a similar function in atmodexplorer.
-	It is a matplotlib canvas is the sense that it has one matplotlib figure at self.fig, and an axes at self.ax. But
+	It is a matplotlib canvas in the sense that it has one matplotlib figure at self.fig, and an axes at self.ax. But
 	otherwise it's just a convenient way of organizing the code and has nothing to do with Matplotlib.
 	It's important parameters are the PlotDataHandler instance as self.pdh, and the ControlState instance at self.controlstate
 	It's parent, the AtModWebObj that ties the application together is at self.atmo. It shares it's controlstate with the UiHandler,
 	which handles requests.
-
 	"""
 	def __init__(self,atmo):		
 		self.atmo = atmo #"parent" atmodwebobject
@@ -1348,6 +1344,11 @@ class FakeCanvas(object):
 		self.textobj = self.fig.text(*args,**kwargs)
 
 class AtModWebObj(object):
+	"""
+	The AtModWebObj class is a representation of a single user session of AtModWeb.
+	It includes all of the pieces required for a user with the AtModWeb webpage open in their browser
+	to generate plots and interact with the data.
+	"""
 	def __init__(self,parent,userid=None):
 		self.log = logging.getLogger(self.__class__.__name__)
 		self.parent = parent
@@ -1371,6 +1372,17 @@ class AtModWebObj(object):
 
 
 	def replot(self):
+		"""
+		The last step in the creation of a new plot to be displayed in the frontend.
+
+		This function, when called, writes the FakeCanvas' matplotlib figure
+		to a file on the disk, the name of which is dependent on the current unix time.
+		The URL for the file (as a relative path) is then recorded in the controlstate,
+		and returned to the caller (usually the UiHandler, which then relays it to the frontend in 
+		a HTTP response). 
+		Does several other incidental labeling tasks, and also returns a 'caption' for the
+		graphic. 
+		"""
 		#self.canvas.refresh(force_full_refresh=True)
 		#Name file with unix epoch and userid
 		relfn = os.path.join(self.parent.imgreldir,'amwo_%s_%d.png' % (str(self.userid),
@@ -1397,7 +1409,7 @@ class AtModWebObj(object):
 
 		#Store the controlstate that was used to make the plot
 		self.controlstate() # store the last controlstate as states[-1]
-
+		self.n_total_plots += 1
 		return relfn, cap
 
 	def make_gif(self,gif='out.gif',delay=20,delete_imgs=False):
@@ -1437,6 +1449,11 @@ class AtModWebObj(object):
 		#	subprocess.check_call("xdg-open %s" % (gif))
 
 	def restart(self):
+		"""
+		A full 'hard' restart of the backend. Destroys and recreates all of 
+		the instances of the AtModWeb components (FakeCanvas, UiHandler, Synchronizer) 
+		for this single user. Called if UiHandler receives {posttype:'restart'} as a POST request
+		"""
 		#A full scale panic restart
 		#Just reinitalize all the things
 		self.log.warn("---RESTARTING THE BACKEND---")
@@ -1451,8 +1468,13 @@ class AtModWebObj(object):
 
 
 class UiDispatcher(object):
-	"""Just dispatches requests to the approriate uihandler as specified by the userid cookie"""
-
+	"""
+	Makes sure that requests from a particular user's session 
+	get dispatched to the proper instances of UiHandler and AtModWebObj
+	that contains their plot history. Helps make AtModWeb multiuser.
+	a.k.a dispatches requests to the approriate uihandler as 
+	specified by the userid cookie.
+	"""
 	exposed = True
 
 	def __init__(self,muamwo):
@@ -1493,8 +1515,15 @@ class UiDispatcher(object):
 			self.muamwo._usernames[userid] = un
 			respcookie = cherrypy.response.cookie
 			respcookie['userid'] = userid
-			respcookie['userid']['max-age']=3600
+			respcookie['userid']['max-age']=3630
 			return {posttype:'true'}
+		elif 'kill_' in posttype:
+			uid = posttype.split('kill_')[-1]
+			uid = str(uid)
+			if uid in self.muamwo._usernames:
+				self.muamwo.kill(userids=[uid])
+			else:
+				self.log.error("Recieved kill POST for nonexistant userid %d" % (uid))
 		elif 'logout' == 'posttype':
 			self.muamwo.logout()
 			return {'logout':'true'}
@@ -1522,14 +1551,61 @@ class MultiUserAtModWebObj(object):
 	@cherrypy.expose
 	def console(self):
 		uid = self.get_userid()
+		#Organize the parameters for each AtModWeb as a table row
+		th = OrderedDict()
+		th['created'] = 'Time Created'
+		th['accessed'] = 'Last Accessed'
+		th['username'] = 'Username'
+		th['userid'] = 'User ID Number'
+		th['nplots'] = 'Number of Plots Created'
+		th['kill'] = 'Kill Session'
+		tr = copy.deepcopy(th) #OrderedDict for table rows
 		retstr = "<html><body>"
+		#Handle the kill buttons
+		retstr += """
+		<link href="www/atmodweb.css" rel="stylesheet" type="text/css">
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+		<script> 
+		$(document).ready(function(){
+			$('.killer').on("click", function (e) {
+				var id = $(e.target).attr('name');
+				console.log('Killing '+String(id))
+				var doingthething = $.ajax({url: "/uihandler",data: {"posttype":"kill_"+String(id)},type: "POST",dataType:"json",
+					success : function (json) {
+						$(e.target).text('KILLED')
+						console.log('Kill success')
+					}
+				})
+			});
+		});
+		</script>
+		"""
+		retstr += '<div ID="locationpanel" class="panel">'
+		retstr += '<h1>Admin Interface for AtModWeb</h1>'
+		retstr += '<p>If you are not the administrator of this application, you should not be here.</p>'
 		if uid is not None and self._usernames[uid].lower() == 'liam':
 			retstr += "<h1> Currently running amwo instances: </h1>" 
-			retstr += "<ul>"
+			retstr += "<table>"
+			#Add headers to the table
+			retstr += "<tr>"
+			for field in th:
+				retstr += "<th>%s</th>" % (str(th[field]))	
+			retstr += "</tr>\n"
 			for key in self._amwo:
-				retstr += "<li>%s: created at %s by %s, last accessed %s</li>" % (key,self._amwo[key].time_created.strftime("%c"),
-					str(self._usernames[key]) if key in self._usernames else 'DEFUNCT USER',self._amwo[key].last_accessed.strftime("%c"))
-			retstr += '</ul>' 
+				tr['username'] = str(self._usernames[key]) if key in self._usernames else 'NO-USERNAME'
+				tr['created'] = self._amwo[key].time_created.strftime('%c')
+				tr['accessed'] = self._amwo[key].last_accessed.strftime("%c")
+				tr['userid'] = '<strong>%s</strong>' % str(key) # Make the username stand out
+				tr['nplots'] = str(self._amwo[key].n_total_plots)
+				tr['kill'] = """<button ID='kill_%s' class='killer' name='%s' title="Kill this user's session">KILL</button>""" % (key,
+					key)
+				#Add a row to the table
+				retstr += "<tr>"
+				for field in th:
+					retstr += "<td class='%s'>%s</td>" % (str(key),str(tr[field]))	
+				retstr += "</tr>\n"
+			retstr += '</table>' 
+			retstr += '</div>'
 		retstr += "</body></html>"
 		return retstr
 
@@ -1540,14 +1616,25 @@ class MultiUserAtModWebObj(object):
 		data,header = self.get_user_amwo().syncher.data_as_csv()
 		return header+'\n'+data
 
-	def clean_up(self):
-		"""Kills any instances that haven't been touched in an hour"""
-		for userid in self._amwo:
-			if (datetime.datetime.now() - self._amwo[userid].last_accessed).total_seconds() > 3600:
-				del(self._amwo[userid]) 
+	def kill(self,userids=None):
+		"""Kill all specified instance or if userids is not kills any instances that haven't been touched in an hour"""
+		if userids is None:
+			userids = self._amwo.keys()
+			for userid in userids:
+				if (datetime.datetime.now() - self._amwo[userid].last_accessed).total_seconds() >= 3600:
+					self.log.warn('Session is too old and will be killed for %s: uid %d' % (self._usernames[userid],userid))
+					del(self._amwo[userid]) 
+					del(self._usernames[userid])
+					gc.collect()
+		else:
+			for userid in userids:
+				self.log.warn('Forced to end session for %s: uid %s' % (self._usernames[userid],str(userid)))
+				del(self._amwo[userid])
 				del(self._usernames[userid])
+				gc.collect()
 
 	#Authorization tool
+	#This is called whenever a request comes in via a CherryPy Tool
 	def check_auth(self,*args, **kwargs):
 		"""A tool that looks for a userid cookie, and makes sure that the cookie has an entry in the _usernames"""
 		reqcookie = cherrypy.request.cookie
@@ -1557,7 +1644,7 @@ class MultiUserAtModWebObj(object):
 			self._usernames[userid] = '--pending--'
 			respcookie = cherrypy.response.cookie
 			respcookie['userid'] = userid
-			respcookie['userid']['max-age']=3600
+			respcookie['userid']['max-age']=3630
 			raise cherrypy.HTTPRedirect("/login")
 		else:
 			#No username registered to userid
@@ -1573,6 +1660,7 @@ class MultiUserAtModWebObj(object):
 		respcookie = cherrypy.response.cookie
 		respcookie['userid']['max-age']=0
 		respcookie['userid']['expires']=time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(time.time()))
+		gc.collect()
 
 	def newuserid(self):
 		return str(random.randint(0,2**31))
@@ -1639,7 +1727,7 @@ if __name__ == '__main__':
 		 },
 		 '/docs': {
 			 'tools.staticdir.on': True,
-			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc/build/html')
+			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc','build','html')
 		 },
 		 '/favicon.ico': {
 			'tools.staticfile.on':True,
@@ -1660,9 +1748,6 @@ if __name__ == '__main__':
 
 	cherrypy.log.screen = False
 	cherrypy.log.access_log.propagate = False
-  	
-	wd = cherrypy.process.plugins.BackgroundTask(60, webapp.clean_up)
-	wd.start()
 
 	cherrypy.tree.mount(webapp, '/',conf)
 	cherrypy.engine.start()

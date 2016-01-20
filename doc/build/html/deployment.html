@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>AtModWeb Deployment on Digital Ocean &mdash; AtModWeb 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="AtModWeb 0.1.0 documentation" href="index.html" />
+    <link rel="prev" title="For Developers" href="for_developers.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="for_developers.html" title="For Developers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="atmodweb-deployment-on-digital-ocean">
+<h1>AtModWeb Deployment on Digital Ocean<a class="headerlink" href="#atmodweb-deployment-on-digital-ocean" title="Permalink to this headline">¶</a></h1>
+<p>This is a short tutorial on deploying atmodweb on the Digital Ocean virtual private server service.</p>
+<p>We will use a $20/mo droplet which is allocated 2 GB of RAM and 2 processors.</p>
+<p>We will install Ubuntu 14.04, and log in using an SSH key. Please see the Digital Ocean documentation
+for more information on how to do this.</p>
+<p>The IP for our droplet is xxx.xxx.xxx.xxx</p>
+<p>We&#8217;ll use terminal and SSH to get into the droplet. Since we&#8217;ve enabled SSH key login, we won&#8217;t need to
+enter a password.</p>
+<div class="highlight-bash"><div class="highlight"><pre>ssh root@xxx.xxx.xxx.xxx
+</pre></div>
+</div>
+<p>First make sure the droplet is up to date, and install security software to prevent it being hacked, and install git so we can get the code, and gfortran so we can compile the model code.</p>
+<div class="highlight-bash"><div class="highlight"><pre>sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install fail2ban
+sudo apt-get install git
+sudo apt-get install gfortran
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you get a strange error on starting atmodweb where python complains about not being able to find libSM.so.6, don&#8217;t dispair. It is a <cite>known anaconda issue</cite> &lt;<a class="reference external" href="https://github.com/ContinuumIO/anaconda-issues/issues/244">https://github.com/ContinuumIO/anaconda-issues/issues/244</a>&gt;_ .The fix is to sudo apt-get install python-qt4.</p>
+</div>
+<p>The we make a non-root user so that we&#8217;re not running AtModWeb as root (bad security practice).</p>
+<div class="highlight-bash"><div class="highlight"><pre>useradd atmodweb
+</pre></div>
+</div>
+<div class="highlight-bash"><div class="highlight"><pre>su atmodweb
+</pre></div>
+</div>
+<p>Then we will download the anaconda python distribution. The easy way to do this is to navigate to the
+Anaconda site, right click the link to the installation script and copy the link location. Then you
+can paste it into the terminal that is SSH&#8217;ed into the droplet</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~
+wget &lt;paste-long-numerical-url-to-Anaconda-*.sh-here&gt;
+bash Anaconda&lt;tab&gt;
+</pre></div>
+</div>
+<p>Hitting tab when typing (at &lt;tab&gt;) will autocomplete the Anaconda shell command. We&#8217;ll just install Anaconda to /home/atmodweb/anaconda (the default)</p>
+<p>Anaconda will do it&#8217;s thing and then ask &#8216;Do you wish the installer to prepend the Anaconda install location
+to PATH in your /home/liamk/.bashrc?&#8217;, which we will answer with &#8216;yes&#8217;. This will make anaconda the default python (i.e. if you type python you get the anaconda python and not the one in /usr/bin/python )</p>
+<p>Now we make sure anaconda is up to date:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">source</span> ~/.bashrc
+conda update conda
+</pre></div>
+</div>
+<p>And install the requirements of AtModWeb (BaseMap may take awhile, it often needs the newest numpy and matplotlib as well)</p>
+<div class="highlight-bash"><div class="highlight"><pre>conda install basemap
+pip install cherrypy
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Do not try to install atmodweb and atmodexplorer without first installing the dependancies. There is still work to be done it make the setup.py dependancies totally inclusive so that everything can be &#8216;python setup.py install&#8217;ed</p>
+</div>
+<p>Now we install the AtModWeb and the models it needs. Contact the maintainer of this repo to learn what the urls are for the private model repos and to get your github account approved to be able to download them. This is a matter of academic curtosy to the maintainers of the models, who have not yet cleared us to release them publicly.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~
+git clone https://github.com/lkilcommons/atmodexplorer
+git clone https://github.com/lkilcommons/atmodweb
+git clone https://github.com/lkilcommons/&lt;MSIS-project-name&gt;
+git clone https://github.com/lkilcommons/&lt;HWM-project-name&gt;
+</pre></div>
+</div>
+<p>First we build the models&#8217; fortran code and then we can install the atmodexplorer and atmodweb:</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you don&#8217;t do these in order, they won&#8217;t work, because msispy and hwmpy are dependancies of atmodexplorer, and atmodexplorer is a dependancy of atmodweb</p>
+</div>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> ~/msis-project-name
+python setup.py develop
+<span class="nb">cd</span> ~/hwm-project-name
+python setup.py develop
+<span class="nb">cd</span> ~/atmodexplorer
+python setup.py develop
+<span class="nb">cd</span> ~/atmodweb
+python setup.py develop
+</pre></div>
+</div>
+<p>Finally we will configure the installation of atmodweb by setting a few environment variables in our .bashrc.
+Replace the values here with something appropriate for your server (i.e. xxx.xxx.xxx.xxx with your IP or hostname),
+and if you want to password protect your server, an approriately strong password and username. This uses CherryPy&#8217;s digest authentication.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c">#in .bashrc, add this line</span>
+<span class="nb">export </span><span class="nv">CHERRYPY_IP</span><span class="o">=</span><span class="s1">&#39;xxx.xxx.xxx.xxx&#39;</span>
+<span class="c">#if you want to password protect your site, add these too</span>
+<span class="nb">export </span><span class="nv">CHERRYPY_USER</span><span class="o">=</span><span class="s1">&#39;my_user&#39;</span>
+<span class="nb">export </span><span class="nv">CHERRYPY_PWD</span><span class="o">=</span><span class="s1">&#39;my_password&#39;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want to run your instance using the normal web port (80), you will need to issue the following firewall rule. You cannot bind the cherrypy server directly to 80 (unless you are running as root, which is BAD SECURITY), so you will need to redirect.</p>
+</div>
+<p>How to run on port 80:</p>
+<div class="highlight-bash"><div class="highlight"><pre>
+</pre></div>
+</div>
+<p>iptables -t nat -A PREROUTING -p tcp &#8211;dport 80 -j REDIRECT &#8211;to-port 8080</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="for_developers.html"
+                        title="previous chapter">For Developers</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/deployment.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="for_developers.html" title="For Developers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AtModWeb 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Liam Kilcommons (CU Boulder Aerospace / CCAR SEDA).
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
