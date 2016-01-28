@@ -347,7 +347,7 @@
                         $cblog(3,e,"Plottype from backend is: "+json[myname])
             			if (newval != $(e.target).val()) {
             				$(e.target).val(json[myname])
-                                    	$cblog(3,e,"Plottype changed to: "+newval)
+                            $cblog(3,e,"Plottype changed to: "+newval)
             				var changedtype = $plottype_sel.triggerHandler("change")
             				$.when(changedtype).then(done.resolve())
             				$(e.target).fadeOut(200).fadeIn(200)
@@ -853,6 +853,14 @@
                 $cblog(5,e,"In databutton callback")
                 window.open('/data')
             });
+
+            //Handle clicking the "Download Graph" button
+            //---------------------------------------------------
+            $('#graphbutton').on("click", function (e){
+                $cblog(5,e,"In graphbutton callback")
+                window.location.assign('/currentplot')
+            });
+
 
             //This function operates on a dynamic driver chart data
             //object and finds the F10.7 and 81 day F10.7 average, and

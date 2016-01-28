@@ -1549,6 +1549,14 @@ class MultiUserAtModWebObj(object):
 		return """<html>Restarting done. </html>"""
 
 	@cherrypy.expose
+	def currentplot(self):
+		"""
+		A link to the currentplot with the proper response headers to trigger a download
+		"""
+		url = self.get_user_amwo().controlstate['thisplot']
+		return cherrypy.lib.static.serve_download(os.path.join(self.rootdir,url))
+
+	@cherrypy.expose
 	def console(self):
 		uid = self.get_userid()
 		#Organize the parameters for each AtModWeb as a table row
