@@ -1731,11 +1731,15 @@ if __name__ == '__main__':
 		 },
 		 '/www': {
 			 'tools.staticdir.on': True,
-			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'www')
+			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'www'),
+			 'tools.expires.on'    : True,
+  			 'tools.expires.secs'  : 3600
 		 },
 		 '/docs': {
 			 'tools.staticdir.on': True,
-			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc','build','html')
+			 'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc','build','html'),
+			 'tools.expires.on'    : True,
+  			 'tools.expires.secs'  : 3600
 		 },
 		 '/favicon.ico': {
 			'tools.staticfile.on':True,
