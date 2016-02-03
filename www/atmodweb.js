@@ -167,7 +167,7 @@
             $.whenall = function(arr) { return $.when.apply($, arr); };
 
             //Custom Logging Function, Python Style
-            $loglevel= 2; 
+            $loglevel= 5; 
             $logarr = ['ATMODWEB LOG'];
             $logon = false;
             $logit = function(level,context,message) {
@@ -368,9 +368,9 @@
                 //get what is selected so we can decide if it's sane given the new options
                 var selection = $(e.target).val()
                 var initializing = $.Deferred()
-                $cblog(4,e,"selection is "+selection)
+                $cblog(4,e,"selection before initialize is "+selection)
                 if ( $(e.target).hasClass("initialize_me") ){
-                    $cblog(4,e,"initializing.")
+                    $cblog(4,e,"has initialize_me class, AJAXing in options.")
                     //Get the list of valid options we can use from the backend (from the session)
                     var spawning_options = $.ajax({url: "/uihandler",data: {"statevar":myname+"_options"},type: "GET",
                         success: function( json ) {
@@ -380,7 +380,7 @@
                             $.each(json[myname+"_options"], function(key, value) {
                                 //Set the option value to the key, and the html to the value
                                 $(e.target).append($('<option>', { value : key }).text(value))
-
+                                $cblog(5,String(myname)+": success","Added option "+String(key)+" , "+String(value))
                             });
                                                     
                         }
@@ -391,20 +391,23 @@
 
                     //Make sure the current selection is a valid option, otherwise change it and trigger "change"
                     $.when(spawning_options).then(function () {
+                        var checkingSelection = $.Deferred()
                         var optionValues = [];
                         $('option',e.target).each(function() {
                             optionValues.push($(this).val());
                         });
                         if ( !$.inArray(selection,optionValues) ) {
-                            $cblog(2,e,"Option "+selection+" is not sane, defualting to "+optionValues[0])
+                            $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0])
                             $(e.target).val(optionValues[0])
-                            return $(e.target).triggerHandler("change")
-                        } 
+                            $.when($(e.target).triggerHandler("change")).then(checkingSelection.resolve)
+                        } else {
+                            checkingSelection.resolve()
+                        }
+                        return checkingSelection.promise()
                     }).then($init_sel(myname))
                     .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
-                    
                 } else {
                     $.when($selobj[myname]['boundsmin'].triggerHandler("focus"),$selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
@@ -551,12 +554,12 @@
 
                 if (selection == "map")
                 {   
-                    var xvar_trigger = $xvar_sel.val("Longitude").triggerHandler("change")
-                    var yvar_trigger = $yvar_sel.val("Latitude").triggerHandler("change")
+                    //var xvar_trigger = $xvar_sel.val("Longitude").triggerHandler("change")
+                    //var yvar_trigger = $yvar_sel.val("Latitude").triggerHandler("change")
                     //Update the Deferred so that yvar and xvar selects are ensured to be the correct values (Longitude and Latitude)
                     //after everything is done
 
-                    defrd.done(xvar_trigger,yvar_trigger)
+                    //defrd.done(xvar_trigger,yvar_trigger)
 
                     $(".zvar").show()
                     
@@ -581,7 +584,7 @@
                 $.when(plottype_changed).done(function (data) {
                     
                     $cblog(4,e,"triggering focus from plottype change") 
-                    $.when_all_trigger($all_var_log,'change').then($.when_all_trigger($all_var_sel,"focus")).then(defrd.resolve);
+                    return $.when_all_trigger($all_var_log,'change').then($.when_all_trigger($all_var_sel,"focus")).then(defrd.resolve);
                 })
             
                 return defrd.promise() //Return a Deferred so we can see if the callback finished
@@ -1121,7 +1124,7 @@
                         }
                     }));
 
-                    $.when(getting_drivers,getting_units,getting_desciptions).done(all_done.resolve);
+                    $.when(getting_units,getting_desciptions).done(all_done.resolve);
                 } else {
                     $cblog(4,e,"Drivers not set to reinit, resolving main Deferred")
                     all_done.resolve()
