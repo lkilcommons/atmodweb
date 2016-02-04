@@ -204,9 +204,9 @@
                 if ( $.isArray(yvar) ){ yvar = yvar[0] };
                 if ( $.isArray(zvar) ){ zvar = zvar[0] };
                 
-                var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) != -1
-                var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  != -1
-                var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) != -1
+                var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) !== -1
+                var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  !== -1
+                var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) !== -1
                 if (debug == true) { console.log([xvar,yvar,zvar])}
                 if (debug == true) { console.log([lat_in,lon_in,alt_in])}
                 //$("#latinputlbl").hide()
@@ -367,6 +367,9 @@
                 var myname = $(e.target).attr("name")
                 //get what is selected so we can decide if it's sane given the new options
                 var selection = $(e.target).val()
+                if ( $.isArray(selection) ) {
+                    selection = selection[0]
+                }
                 var initializing = $.Deferred()
                 $cblog(4,e,"selection before initialize is "+selection)
                 if ( $(e.target).hasClass("initialize_me") ){
@@ -380,7 +383,7 @@
                             $.each(json[myname+"_options"], function(key, value) {
                                 //Set the option value to the key, and the html to the value
                                 $(e.target).append($('<option>', { value : key }).text(value))
-                                $cblog(5,String(myname)+": success","Added option "+String(key)+" , "+String(value))
+                                $cblog(5,e,"Added option "+String(key)+" , "+String(value))
                             });
                                                     
                         }
@@ -396,15 +399,18 @@
                         $('option',e.target).each(function() {
                             optionValues.push($(this).val());
                         });
-                        if ( !$.inArray(selection,optionValues) ) {
+                        var optionind = $.inArray(selection,optionValues)
+                        if ( optionind === -1 ) {
                             $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0])
                             $(e.target).val(optionValues[0])
-                            $.when($(e.target).triggerHandler("change")).then(checkingSelection.resolve)
+                            $.when($(e.target).triggerHandler("change")).done(checkingSelection.resolve)
                         } else {
+                            $(e.target).val(optionValues[optionind])
                             checkingSelection.resolve()
                         }
                         return checkingSelection.promise()
-                    }).then($init_sel(myname))
+                    })
+                    //.then($init_sel(myname))
                     .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
@@ -584,7 +590,9 @@
                 $.when(plottype_changed).done(function (data) {
                     
                     $cblog(4,e,"triggering focus from plottype change") 
-                    return $.when_all_trigger($all_var_log,'change').then($.when_all_trigger($all_var_sel,"focus")).then(defrd.resolve);
+                    $.when_all_trigger($all_var_log,'change')
+                    .then($.when_all_trigger($all_var_sel,"focus"))
+                    .done($hidePosIfNeeded,defrd.resolve);
                 })
             
                 return defrd.promise() //Return a Deferred so we can see if the callback finished
@@ -673,7 +681,7 @@
                     var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT"})
                     //Make sure the bounds are up to date
                     
-                    $.when(ajax_done)
+                    ajax_done
                     .then($selobj[myname]['sel'].triggerHandler("focus"))
                     .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
