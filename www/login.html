@@ -36,7 +36,24 @@
 		$('#username_button').on("click",authuser)
 		$('#email_input').on("change",authuser)
 		
-	})
+		$.getJSON("https://api.github.com/repos/lkilcommons/atmodweb/commits", function(data) {
+			var msg = data[0].commit.message
+			var dt = Date(data[0].commit.committer.date)
+			var href = data[0].html_url
+			$.getJSON("https://api.github.com/repos/lkilcommons/atmodexplorer/commits", function(data) {
+				var dte = Date(data[0].commit.committer.date)
+				if ( dte > dt ) {
+					href = data[0].html_url
+					dt = dte
+					msg = data[0].commit.message
+				}
+        	});
+        	console.log(href)
+			$('#lastcommit').text(msg+' commited on '+String(dt)).attr('href',href);
+    	});
+
+    	
+    });
 	</script>
 	<body>
 
@@ -53,8 +70,10 @@
 
 	    <div ID = "login" class="panel">
 	  		<div ID = "agu_div">
-	    		<h1>To Dr. Knipp's Space Environment Students:</h1>
-	    		<p><strong>I am actively working on AtModWeb to address your concerns. This may cause the server to go down for a minute or two when I apply an update. Just log back in if you get disconnected or check back in a minute if the server is down. I apologize for the inconvenience!</strong>
+	  			<h1>I am actively working on AtModWeb!</h1>
+	    		<p><strong>If you get kicked off it's probably because I've just pushed an update. Just log in again, reload the page to make sure you get the latest updates, and keep plotting!</strong></p>
+	    		<p>My most recent update on github:</p>
+	    		<p>AtModWeb: <a ID='lastcommit' href=''></a></p>  		
 	    	</div>
 	        <h1 class="h1title"> Welcome to AtModWeb! </h1>
 	        <p class="login"> To use atmodweb, you will need to provide a username and an email address.</p>

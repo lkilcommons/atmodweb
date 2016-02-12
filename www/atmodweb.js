@@ -355,7 +355,7 @@
                             $cblog(3,e,"Plottype changed to: "+newval)
             				var changedtype = $plottype_sel.triggerHandler("change")
             				$.when(changedtype).then(done.resolve())
-            				$(e.target).fadeOut(200).fadeIn(200)
+            				$(e.target).fadeOut(100).fadeIn(100)
             			}
                     }
                 })
@@ -448,7 +448,7 @@
                         }
                         if ($(e.target).val() != newval) {
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(200).fadeIn(200) 
+                            $(e.target).fadeOut(100).fadeIn(100) 
                             $cblog(4,e,"Bounds changed to "+newval)
                         }
                         
@@ -472,7 +472,7 @@
                         newval = $pad(json["datetime"],dtpadding[myname])
                         if ( newval != $(e.target).val() ) {
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(200).fadeIn(200)
+                            $(e.target).fadeOut(100).fadeIn(100)
                             $cblog(4,e,"value changed to "+json["datetime"])
                         }
                         
@@ -494,7 +494,7 @@
                         var newval = String(json[myname])
                         if ($(e.target).val() != newval){
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(200).fadeIn(200)
+                            $(e.target).fadeOut(100).fadeIn(100)
                         }
                         $cblog(4,e,"stringified value from backend is "+newval)
                     }
@@ -687,7 +687,7 @@
                     //Make sure the bounds are up to date
                     
                     ajax_done
-                    .then($selobj[myname]['sel'].triggerHandler("focus"))
+                    //.then($selobj[myname]['sel'].triggerHandler("focus"))
                     .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
@@ -795,7 +795,7 @@
                 var plotting_done = $.Deferred()
 
                 //Put in the loading sign
-                $("#plotimg").attr("src","/www/loading.gif").fadeIn(200)
+                $("#plotimg").attr("src","/www/loading.gif").fadeIn(100)
 
                 var refreshing = $.ajax({url: "/uihandler", data: {"posttype":"refreshnow"},type: "POST",
                     error: function(jqxhr,status,error) {
@@ -804,7 +804,7 @@
                         var getting_error = $.ajax({url: "/uihandler", data: {"statevar":"lasterror"},type: "GET",
                             success: function (json) {
                                 alert("Oops, I couldn't refresh your plot. Please check that your selections make sense.\n "+String(json['lasterror']))
-                            $("#plotimg").attr("src","/www/error.png").fadeIn(200)
+                            $("#plotimg").attr("src","/www/error.png").fadeIn(100)
                             }
                         })
                         return getting_error
@@ -821,7 +821,7 @@
                             $cblog(4,e,"replotnow POST succeeded adding plot "+json["src"])
                             $cblog(5,e,"caption is "+json["cap"])
 
-                            $("#plotimg").attr("src",json["src"]).fadeIn(200);    
+                            $("#plotimg").attr("src",json["src"]).fadeIn(100);    
                             $("#plotimg_cap").html($format_caption(json["cap"]))
                             $("#dynamicdriverdiv").addClass('initialize_me')
                             $driver_reinit = true
@@ -829,7 +829,7 @@
                         error : function ( jqxhr ) {
                             $cblog(1,e,"FAILED replotnow POST request text is: "+jqxhr.responseText)
                             alert("Oops, I was unable to save your plot. Please change your selections and try again.")
-                            $("#plotimg").attr("src","/www/error.png").fadeIn(200)
+                            $("#plotimg").attr("src","/www/error.png").fadeIn(100)
                         }
                         
                     }) //ajax done
@@ -1093,7 +1093,7 @@
                                     if (theinput.val() != value) {
                                         theinput.val(value)
                                         //Animate the change
-                                        theinput.fadeOut(200).fadeIn(200)
+                                        theinput.fadeOut(100).fadeIn(100)
                                     }
 
                                 }
@@ -1157,7 +1157,7 @@
                 $cblog(5,e,"In callback")
                 var prevdone = $.Deferred()
                 //Put in the loading sign
-                $("#plotimg").attr("src","/www/loading.gif").fadeIn(200)
+                $("#plotimg").attr("src","/www/loading.gif").fadeIn(100)
 
                 var getting_prev = $.ajax({url: "/uihandler", data: {"posttype":"prevplot"},type: "POST",
                     success: function (json) {
@@ -1174,7 +1174,7 @@
 
                         $cblog(1,e,"FAILED to AJAX in previous plot url, caption, index, response was: "+jqxhr.responseText)
                         alert("Sorry, I couldn't retrieve previous plot")
-                        $("#plotimg").attr("src","/www/error.png").fadeIn(200)
+                        $("#plotimg").attr("src","/www/error.png").fadeIn(100)
                     }
 
                 });
@@ -1201,7 +1201,7 @@
                 $cblog(5,e,"In callback")
                 //Put in the loading sign
                 var nextdone = $.Deferred()
-                $("#plotimg").attr("src","/www/loading.gif").fadeIn(200)
+                $("#plotimg").attr("src","/www/loading.gif").fadeIn(100)
 
                 var getting_next = $.ajax({url: "/uihandler", data: {"posttype":"nextplot"},type: "POST",
                     success: function (json) {
@@ -1217,7 +1217,7 @@
                     error: function (jqxhr) {
                         $cblog(1,e,"FAILED to AJAX in nextplot plot url, caption, index, response was: "+jqxhr.responseText)
                         alert("Sorry, I couldn't retrieve next plot")
-                        $("#plotimg").attr("src","/www/error.png").fadeIn(200)
+                        $("#plotimg").attr("src","/www/error.png").fadeIn(100)
                     }
 
                 });
@@ -1312,7 +1312,7 @@
 
             //Put a loading image in the plot
             $("#capdiv").slideUp()
-            $("#plotimg").attr("src","/www/loading.gif").fadeIn(200)
+            $("#plotimg").attr("src","/www/loading.gif").fadeIn(100)
 
             //Ajax in the username and user info, we will wait for this and the backend synch POST to complete before 
             //doing anything else
