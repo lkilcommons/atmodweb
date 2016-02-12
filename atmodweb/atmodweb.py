@@ -239,8 +239,8 @@ class ControlStateManager(object):
 		if key not in self.special_keys:
 			return key in self.controlstate
 		else:
-			return True #TODO - Check if this is right...shouldn't this be key in self.controlstate?
-
+			return True 
+			
 	def __call__(self):
 		#If we've gotten here, it's because we successfully refreshed, so this is an okay set of controlstate settings
 		self.controlstate['controlstate_is_sane']=True
@@ -790,10 +790,9 @@ class Synchronizer(object):
 				#We are holding altitude constant, so we will have to rerun the model
 				self.controlstate['run_model_on_refresh'] = True
 		
-		#If the altitude boundaries were changed
-		if (self.controlstate['xvar']=='Altitude' and self.controlstate.changed('xbounds')) or\
-			(self.controlstate['yvar']=='Altitude' and self.controlstate.changed('ybounds')):
-			self.log.info("Altitude boundaries changed and altitude is X or Y variable, will rerun model")
+		#If position boundaries were changed
+		if any([self.is_position(coord) and self.controlstate.changed(coord+'bounds') for coord in ['x','y']]):
+			self.log.info("Position boundaries changed, will rerun model")
 			self.controlstate['run_model_on_refresh'] = True
 
 		if self.controlstate.changed('differencemode'):
