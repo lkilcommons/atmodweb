@@ -170,24 +170,29 @@
             $loglevel= 5; 
             $logarr = ['ATMODWEB LOG'];
             $logon = false;
+            $consolelogon = false;
             $logit = function(level,context,message) {
-                var now = Date.now()
-                var logstr = "["+String(now)+"]"+"["+context+"] "
-                var levels = ["ERROR","WARNING","INFO","DEBUG","PEDANTIC"]
-                logstr = logstr+String(levels[level-1])+": "+message
-                if ($logon && $loglevel >= level) { $logarr.push(logstr) }
-                if(debug && $loglevel >= level) { console.log(logstr) }
+                if ( $consolelogon ) {
+                    var now = Date.now()
+                    var logstr = "["+String(now)+"]"+"["+context+"] "
+                    var levels = ["ERROR","WARNING","INFO","DEBUG","PEDANTIC"]
+                    logstr = logstr+String(levels[level-1])+": "+message
+                    if ($logon && $loglevel >= level) { $logarr.push(logstr) }
+                    if(debug && $loglevel >= level) { console.log(logstr) }
+                }
             }
             
             $cblog = function(level,evnt,message) {
-                //Output a sensible callback for the event
-                var callername = $(evnt.target).attr("name")
-                var callerid = $(evnt.target).attr("ID")
-                //console.log(String(callername),String(callerid))
-                if (callername == null) {
-                    $logit(level,"CALLBACK: "+callerid+':'+String(evnt.type), message)
-                } else {
-                    $logit(level,"CALLBACK: "+callername+':'+String(evnt.type), message)
+                if ( $consolelogon ) {
+                    //Output a sensible callback for the event
+                    var callername = $(evnt.target).attr("name")
+                    var callerid = $(evnt.target).attr("ID")
+                    //console.log(String(callername),String(callerid))
+                    if (callername == null) {
+                        $logit(level,"CALLBACK: "+callerid+':'+String(evnt.type), message)
+                    } else {
+                        $logit(level,"CALLBACK: "+callername+':'+String(evnt.type), message)
+                    }
                 }
             }
 
@@ -1474,6 +1479,14 @@
             if(e.which == 68) {
                 // D pressed
                 $(".debug").toggle()
+            }
+            if(e.which == 76) {
+                // L press, toggle console logging
+                if ( $consolelogon ) {
+                    $consolelogon = false
+                } else {
+                    $consolelogon = true
+                }
             }
             if(e.which == 77) {
                 // M press
