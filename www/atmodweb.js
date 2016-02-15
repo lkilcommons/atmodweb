@@ -417,11 +417,11 @@
                         return checkingSelection.promise()
                     })
                     .then($init_sel(myname))
-                    .then($('#'+myname[0]+'boundsmin').triggerHandler("focus"))
-                    .then($('#'+myname[0]+'boundsmax').triggerHandler("focus"))
+                    .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
+                    .then($('#'+myname.charAt(0)+'boundsmax').triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $init_sel(myname).then($('#'+myname[0]+'boundsmin').triggerHandler("focus")).then($('#'+myname[0]+'boundsmax').triggerHandler("focus"))
+                    $init_sel(myname).then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus")).then($('#'+myname.charAt(0)+'boundsmax').triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
@@ -687,8 +687,8 @@
                     
                     ajax_done
                     //.then($selobj[myname]['sel'].triggerHandler("focus"))
-                    .then($("#"+myname[0]+"boundsmin").triggerHandler("focus"))
-                    .then($("#"+myname[0]+"boundsmax").triggerHandler("focus"))
+                    .then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus"))
+                    .then($("#"+myname.charAt(0)+"boundsmax").triggerHandler("focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
