@@ -416,12 +416,12 @@
                         }
                         return checkingSelection.promise()
                     })
-                    //.then($init_sel(myname))
+                    .then($init_sel(myname))
                     .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $selobj[myname]['boundsmin'].triggerHandler("focus").then($selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    $init_set(myname).then($selobj[myname]['boundsmin'].triggerHandler("focus")).then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
@@ -687,7 +687,7 @@
                     
                     ajax_done
                     //.then($selobj[myname]['sel'].triggerHandler("focus"))
-                    .then($.when_all_trigger("."+String(myname[0])+"bounds","focus"))
+                    .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
