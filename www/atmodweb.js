@@ -417,11 +417,11 @@
                         return checkingSelection.promise()
                     })
                     .then($init_sel(myname))
-                    .then($selobj[myname]['boundsmin'].triggerHandler("focus"))
-                    .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    .then($('#'+myname[0]+'boundsmin').triggerHandler("focus"))
+                    .then($('#'+myname[0]+'boundsmax').triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $init_sel(myname).then($selobj[myname]['boundsmin'].triggerHandler("focus")).then($selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    $init_sel(myname).then($('#'+myname[0]+'boundsmin').triggerHandler("focus")).then($('#'+myname[0]+'boundsmax').triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
