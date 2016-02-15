@@ -167,7 +167,7 @@
             $.whenall = function(arr) { return $.when.apply($, arr); };
 
             //Custom Logging Function, Python Style
-            $loglevel= 5; 
+            $loglevel= 3; 
             $logarr = ['ATMODWEB LOG'];
             $logon = false;
             $consolelogon = false;
@@ -207,11 +207,12 @@
                 var zvar = $zvar_sel.val()
                 if ( $.isArray(xvar) ){ xvar = xvar[0] };
                 if ( $.isArray(yvar) ){ yvar = yvar[0] };
-                if ( $.isArray(zvar) ){ zvar = zvar[0] };
+                //if ( $.isArray(zvar) ){ zvar = zvar[0] };
                 
                 var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) !== -1
                 var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  !== -1
                 var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) !== -1
+                var debug = true
                 if (debug == true) { console.log([xvar,yvar,zvar])}
                 if (debug == true) { console.log([lat_in,lon_in,alt_in])}
                 //$("#latinputlbl").hide()
@@ -220,11 +221,11 @@
                 //if (lat_in) { $("#latinput").attr('disabled',true) } else { $("#latinput").removeAttr('disabled') } 
                 //if (lon_in) { $("#loninput").attr('disabled',true) } else { $("#loninput").removeAttr('disabled') }
                 //if (alt_in) { $("#altinput").attr('disabled',true) } else { $("#altinput").removeAttr('disabled') }
+                //var animopts = {'duration':0,'complete':def.resolve}
                 if (lat_in) { $("#latinputlbl,#latinputbr").hide() } else { $("#latinputlbl,#latinputbr").show() } 
                 if (lon_in) { $("#loninputlbl,#loninputbr").hide() } else { $("#loninputlbl,#loninputbr").show() }
-                if (alt_in) { $("#altinputlbl").hide() } else { $("#altinputlbl").show() }
-    
-                        
+                if (alt_in) { $("#altinputlbl").hide() } else { $("#altinputlbl").show() }        
+                
                 def.resolve()
                 return def.promise()
             } 
@@ -354,12 +355,12 @@
             				$(e.target).val(json[myname])
                             $cblog(3,e,"Plottype changed to: "+newval)
             				var changedtype = $plottype_sel.triggerHandler("change")
-            				$.when(changedtype).then(done.resolve())
-            				$(e.target).fadeOut(100).fadeIn(100)
+            				changedtype.then(done.resolve())
+            				//$(e.target).fadeOut(100).fadeIn(100)
             			}
                     }
                 })
-                return $.when(doneprocessing).then(done)
+                return doneprocessing.then(done)
                 //e.preventDefault()
             });
 
@@ -398,7 +399,7 @@
                     //Set the initializing deferred to resolved once we've 
 
                     //Make sure the current selection is a valid option, otherwise change it and trigger "change"
-                    $.when(spawning_options).then(function () {
+                    spawning_options.then(function () {
                         var checkingSelection = $.Deferred()
                         var optionValues = [];
                         $('option',e.target).each(function() {
@@ -406,9 +407,9 @@
                         });
                         var optionind = $.inArray(selection,optionValues)
                         if ( optionind === -1 ) {
-                            $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0])
+                            $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0]+" and triggering change")
                             $(e.target).val(optionValues[0])
-                            $.when($(e.target).triggerHandler("change")).done(checkingSelection.resolve)
+                            $(e.target).triggerHandler("change").done(checkingSelection.resolve)
                         } else {
                             $(e.target).val(optionValues[optionind])
                             checkingSelection.resolve()
@@ -420,7 +421,7 @@
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $.when($selobj[myname]['boundsmin'].triggerHandler("focus"),$selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    $selobj[myname]['boundsmin'].triggerHandler("focus").then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
@@ -448,7 +449,7 @@
                         }
                         if ($(e.target).val() != newval) {
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(100).fadeIn(100) 
+                            //$(e.target).fadeOut(100).fadeIn(100) 
                             $cblog(4,e,"Bounds changed to "+newval)
                         }
                         
@@ -472,7 +473,7 @@
                         newval = $pad(json["datetime"],dtpadding[myname])
                         if ( newval != $(e.target).val() ) {
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(100).fadeIn(100)
+                            //$(e.target).fadeOut(100).fadeIn(100)
                             $cblog(4,e,"value changed to "+json["datetime"])
                         }
                         
@@ -494,7 +495,7 @@
                         var newval = String(json[myname])
                         if ($(e.target).val() != newval){
                             $(e.target).val(newval)
-                            $(e.target).fadeOut(100).fadeIn(100)
+                            //$(e.target).fadeOut(100).fadeIn(100)
                         }
                         $cblog(4,e,"stringified value from backend is "+newval)
                     }
@@ -506,8 +507,6 @@
             //--Driver Entry Inputs Are Dynamically Created
             //--so must be rebound when they are created
             //--look for them bound to the main document click handler below
-
-            
 
             //-------------------------------------------------------------------
             //Handlers which put new values to backend controlstate (on "change")
@@ -592,12 +591,12 @@
                 
                 $all_var_log.prop("checked",false)
                 
-                $.when(plottype_changed).done(function (data) {
+                plottype_changed.done(function (data) {
                     
                     $cblog(4,e,"triggering focus from plottype change") 
                     $.when_all_trigger($all_var_log,'change')
                     .then($.when_all_trigger($all_var_sel,"focus"))
-                    .done($hidePosIfNeeded,defrd.resolve);
+                    .then($hidePosIfNeeded).done(defrd.resolve);
                 })
             
                 return defrd.promise() //Return a Deferred so we can see if the callback finished
@@ -618,7 +617,7 @@
                                 $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
                                 $all_var_sel.addClass("initialize_me")
                                 $cblog(3,e,"dynamic driver div told to reinit,triggering all focus") 
-                                return $.when($.when_all_trigger($all_controls,"focus")).then($("#dynamicdriverdiv").triggerHandler("click")).then($init_sel('all')).then($show_controls)
+                                return $.when_all_trigger($all_controls,"focus").then($("#dynamicdriverdiv").triggerHandler("click")).then($init_sel('all')).then($show_controls)
                             }   
                 })
 
@@ -688,7 +687,7 @@
                     
                     ajax_done
                     //.then($selobj[myname]['sel'].triggerHandler("focus"))
-                    .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
+                    .then($.when_all_trigger("."+String(myname[0])+"bounds","focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
@@ -750,7 +749,7 @@
                     }
                 })
                 
-                return $.when(putting_bounds).then($('#plotbutton').triggerHandler("click"))
+                return putting_bounds.then($('#plotbutton').triggerHandler("click"))
                 //return putting_bounds
             
             });
@@ -764,7 +763,7 @@
                 $cblog(4,e,"value is: "+newval)
                 //{"statevar":"datetime","newval":{myname : parseInt(newval)}}
                 var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname,"newval":parseInt(newval)},type: "PUT"})
-                var plotting = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
+                var plotting = ajax_done.then($("#plotbutton").triggerHandler("click"))
                 return plotting
                 //return ajax_done
             });
@@ -781,7 +780,7 @@
                 //{"statevar":"datetime","newval":{myname : parseInt(newval)}}
                 var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":newval},type: "PUT"})
                 //var autoscale_done = $.ajax({url: "/uihandler",data: {"posttype":"autoscale"},type: "POST"})
-                var plotting = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
+                var plotting = ajax_done.then($("#plotbutton").triggerHandler("click"))
                 return plotting
                 //return $.when(ajax_done).then(autoscale_done)
             });
@@ -813,7 +812,7 @@
 
                 })
 
-                $.when(refreshing).then(function (thedata) {
+                refreshing.then(function (thedata) {
                     //Tell the backend to save the plot and return the url to the image
                     $cblog(4,e,"refreshnow POST succeeded, now attempting to plot")
                     var done_replotting = $.ajax({url: "/uihandler", data: {"posttype":"replotnow"},type: "POST",dataType: "json",
@@ -1042,8 +1041,8 @@
                                 //If the input doesn't yet exist
                                 if ( theinput.length==0 ) {
                                     //Dynamically determine the length of the field
-                                    var field_size = String(value).length
                                     var valstr = $format_number(value)
+                                    var field_size = valstr.length+1
 
                                     //Put a maximum size on the field so we don't get boxes outside the div
                                     if (field_size > 15) { field_size = 15} 
@@ -1060,7 +1059,7 @@
                                         var textval = $(e.target).val()
                                         $cblog(4,e,"new value is "+textval)
                                         var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"drivers","subfield":myname,"newval":textval},type: "PUT"})
-                                        var plotting_done = $.when(ajax_done).then($("#plotbutton").triggerHandler("click"))
+                                        var plotting_done = ajax_done.then($("#plotbutton").triggerHandler("click"))
                                         return plotting_done
                                         //return ajax_done
                                     });
@@ -1093,7 +1092,7 @@
                                     if (theinput.val() != value) {
                                         theinput.val(value)
                                         //Animate the change
-                                        theinput.fadeOut(100).fadeIn(100)
+                                        //theinput.fadeOut(100).fadeIn(100)
                                     }
 
                                 }
@@ -1110,7 +1109,7 @@
                     $("#dynamicdriverdiv").removeClass("initialize_me")
                     $driver_reinit = false
 
-                    var getting_units = $.when(getting_drivers).then($.ajax({url: "/uihandler",data: {"statevar":"drivers_units"},type:"GET",
+                    var getting_units = getting_drivers.then($.ajax({url: "/uihandler",data: {"statevar":"drivers_units"},type:"GET",
                         success: function(json){
                             //Put the driver units on the labels
                             $.each(json['drivers_units'],function(key,val){
@@ -1123,7 +1122,7 @@
                         }
                     }));
 
-                    var getting_desciptions = $.when(getting_drivers).then($.ajax({url: "/uihandler",
+                    var getting_desciptions = getting_drivers.then($.ajax({url: "/uihandler",
                         data: {"statevar":"drivers_descriptions"},type:"GET",
                         success: function(json){
                             //Put the driver units on the labels
@@ -1179,7 +1178,7 @@
 
                 });
                 
-                $.when(getting_prev)
+                getting_prev
                 .then(function () {
                     if (debug) {console.log("Now triggering dynamicdriverdiv click handler from prev plot callback")}
                     return $("#dynamicdriverdiv").triggerHandler("click")
@@ -1222,7 +1221,7 @@
 
                 });
 
-                $.when(getting_next)
+                getting_next
                 .then(function () {
                     if (debug) {console.log("Now triggering dynamicdriverdiv click handler from next plot callback")}
                     return $("#dynamicdriverdiv").triggerHandler("click")
@@ -1339,7 +1338,7 @@
             synching.done(starting_up.notify('Syncing...(if this seems to take forever, try refreshing the browser)',20))
             
             //--Set initial plot
-            var initial_plot = $.when(synching).then(function (thedata) {
+            var initial_plot = synching.then(function (thedata) {
                 var success_done = $.Deferred()
                 $logit(3,"synching.done"," uiready POST has been sent and completed")
 
@@ -1355,10 +1354,10 @@
                         //elements based on the plottype that is default in the controlstate
                         //resolve when the success function has finished
                         //Now we chain together all of the callbacks 
-                        $.when($plottype_sel.triggerHandler("focus"))
+                        $plottype_sel.triggerHandler("focus")
                             .then(function (thedat) {
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Done with plottype focus")
-                                    return $.when($plottype_sel.triggerHandler("change"))
+                                    return $plottype_sel.triggerHandler("change")
                                 })
                             .then(function (data) {
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Done with plottype change") 
