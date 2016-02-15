@@ -447,11 +447,12 @@
                         } else if ( $(e.target).hasClass('min') ){
                             var newval = $format_number(newbounds[0]) //Use the first number in the comma separated string
                         }
-                        if ($(e.target).val() != newval) {
-                            $(e.target).val(newval)
+                        $(e.target).val(newval)    
+                        //if ($(e.target).val() != newval) {
+                        //    $(e.target).val(newval)
                             //$(e.target).fadeOut(100).fadeIn(100) 
-                            $cblog(4,e,"Bounds changed to "+newval)
-                        }
+                        //    $cblog(4,e,"Bounds changed to "+newval)
+                        //}
                         
                     }
                 });
