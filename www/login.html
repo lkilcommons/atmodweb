@@ -38,18 +38,18 @@
 		
 		$.getJSON("https://api.github.com/repos/lkilcommons/atmodweb/commits", function(data) {
 			var msg = data[0].commit.message
-			var dt = Date(data[0].commit.committer.date)
+			var dt = new Date(data[0].commit.committer.date)
 			var href = data[0].html_url
-			$.getJSON("https://api.github.com/repos/lkilcommons/atmodexplorer/commits", function(data) {
-				var dte = Date(data[0].commit.committer.date)
+			$.getJSON("https://api.github.com/repos/lkilcommons/atmodexplorer/commits", function(data2) {
+				var dte = new Date(data2[0].commit.committer.date)
 				if ( dte > dt ) {
-					href = data[0].html_url
+					href = data2[0].html_url
 					dt = dte
-					msg = data[0].commit.message
+					msg = data2[0].commit.message
 				}
         	});
         	console.log(href)
-			$('#lastcommit').text(msg+' commited on '+String(dt)).attr('href',href);
+			$('#lastcommit').text(msg+' commited on '+dt.toString()).attr('href',href);
     	});
 
     	
