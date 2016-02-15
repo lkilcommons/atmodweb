@@ -421,7 +421,7 @@
                     .then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $init_set(myname).then($selobj[myname]['boundsmin'].triggerHandler("focus")).then($selobj[myname]['boundsmax'].triggerHandler("focus"))
+                    $init_sel(myname).then($selobj[myname]['boundsmin'].triggerHandler("focus")).then($selobj[myname]['boundsmax'].triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
