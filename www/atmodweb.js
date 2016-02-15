@@ -687,7 +687,8 @@
                     
                     ajax_done
                     //.then($selobj[myname]['sel'].triggerHandler("focus"))
-                    .then($.when_all_trigger("."+myname[0]+"bounds","focus"))
+                    .then($("#"+myname[0]+"boundsmin").triggerHandler("focus"))
+                    .then($("#"+myname[0]+"boundsmax").triggerHandler("focus"))
                     .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
@@ -969,6 +970,7 @@
                                     .range(["seagreen","orange", "red"]);
                         
                         thechart.transition()
+                                    .duration(0)
                                     .style("width", function(d) { return (d.value-d.min)/(d.max-d.min) * 100 + "%"; })
                                     .style("background-color", function(d) { return color((d.value-d.min)/(d.max-d.min))})
                                     .text(function(d) { return d.name+': '+String(d.value); });
