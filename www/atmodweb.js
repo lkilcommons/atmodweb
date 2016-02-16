@@ -400,6 +400,9 @@
                 if ( $(e.target).hasClass("initialize_me") ){
                     $cblog(4,e,"has initialize_me class, AJAXing in options.")
                     //Get the list of valid options we can use from the backend (from the session)
+                    //Use an obnoxious deferred closure to make sure that the callback is done before the 
+                    //ajax promise resolves
+                    var callbackdone = $.Deferred() 
                     var spawning_options = $.ajax({url: "/uihandler",data: {"statevar":myname+"_options"},type: "GET",
                         success: function( json ) {
                             //Populate the list
@@ -410,9 +413,9 @@
                                 $(e.target).append($('<option>', { value : key }).text(value))
                                 $cblog(5,e,"Added option "+String(key)+" , "+String(value))
                             });
-                                                    
+                            callbackdone.resolve()  
                         }
-                    });
+                    }).then(callbackdone);
                     //Remove the initilization tag from the select
                     $(e.target).removeClass("initialize_me")
                     //Set the initializing deferred to resolved once we've 
@@ -1525,7 +1528,7 @@
                 // M press
                 $(".model").toggle()
             }
-            
+
             if(e.which == 71) {
                 //G press
                 var gif_mode_on = $.ajax({url: "/uihandler", data: {"posttype":"gifmode"},type: "POST",
