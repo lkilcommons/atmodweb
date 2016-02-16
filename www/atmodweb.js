@@ -104,8 +104,6 @@
                 $("#loading").fadeOut(500)
             }
 
-            
-
             //Make a debugging console log printing thing to put in ajax error
             $generic_error_func = function (jqxhr,status,error) {
                 if (debug) {console.log("Ajax failed: Server says: "+jqxhr.responseText)};
@@ -128,6 +126,9 @@
                     alert("AJAX ERR: "+jqxhr.responseText);
                 } 
             }
+
+            //A Force-redraw hack
+            $.fn.redraw = function() { $(this).each(function() { var redraw = this.offsetHeight; }); return $(this); };
 
             //Need the myself to call recursively
             //$num2str = function myself  (nums) {
@@ -316,7 +317,11 @@
                         waiting_for.push(zvar_sel_set)
                     }
 
-                    $.whenall(waiting_for).done(allset.resolve) //Apparently .done is the right choice
+                    if (which_sel.length > 0) {
+                        $.whenall(waiting_for).done(allset.resolve) //Apparently .done is the right choice
+                    } else {
+                        allset.resolve()
+                    }
                     //it apparently filters out non-functions and deals properly with multiple inputs
                     return allset.promise()
             }
@@ -400,9 +405,6 @@
                 if ( $(e.target).hasClass("initialize_me") ){
                     $cblog(4,e,"has initialize_me class, AJAXing in options.")
                     //Get the list of valid options we can use from the backend (from the session)
-                    //Use an obnoxious deferred closure to make sure that the callback is done before the 
-                    //ajax promise resolves
-                    var callbackdone = $.Deferred() 
                     var spawning_options = $.ajax({url: "/uihandler",data: {"statevar":myname+"_options"},type: "GET",
                         success: function( json ) {
                             //Populate the list
@@ -412,10 +414,9 @@
                                 //Set the option value to the key, and the html to the value
                                 $(e.target).append($('<option>', { value : key }).text(value))
                                 $cblog(5,e,"Added option "+String(key)+" , "+String(value))
-                            });
-                            callbackdone.resolve()  
+                            }); 
                         }
-                    }).then(callbackdone);
+                    });
                     //Remove the initilization tag from the select
                     $(e.target).removeClass("initialize_me")
                     //Set the initializing deferred to resolved once we've 
@@ -430,14 +431,15 @@
                         var optionind = $.inArray(selection,optionValues)
                         if ( optionind === -1 ) {
                             $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0]+" and triggering change")
-                            $(e.target).val(optionValues[optionValues.length-1])
-                            $(e.target).triggerHandler("change").done(checkingSelection.resolve)
+                            $(e.target).val(optionValues[0])
+                            $.when($(e.target).triggerHandler("change")).done(checkingSelection.resolve)
                         } else {
                             $(e.target).val(optionValues[optionind])
                             checkingSelection.resolve()
                         }
                         return checkingSelection.promise()
                     })
+                    .then($init_sel(myname))
                     .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
@@ -451,7 +453,7 @@
 
             //--X, Y, and Z Limit Inputs
             $all_var_bounds.on("focus",function(e) {
-                e.preventDefault();
+                //e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
                 var myid = $(e.target).attr("ID")
@@ -485,10 +487,13 @@
                             //$(e.target).fadeOut(100).fadeIn(100) 
                             $cblog(4,e,"Sibling bounds changed to "+newsibval)
                         }
-                        
-                        
+                    },
+                    error: function (data) {
+                        alert("Failed to get bounds!")
                     }
                 });
+                //mysib.redraw()
+                //$(e.target).redraw()
                 return the_ajax
                 //e.preventDefault()
             });
@@ -713,21 +718,19 @@
                 
                 
                 //Have to do something odd to pass an array to cherrypy with jquery, use 'traditional' param parsing mode
-                multi_updated.done( function(data) {
+                multi_updated.then( function(data) {
                     $cblog(4,e,"Done updating multi.") 
                     
                     var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT"})
                     //Make sure the bounds are up to date
                     
-                    ajax_done
-                    //.then($selobj[myname]['sel'].triggerHandler("focus"))
-                    .then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus"))
-                    .then($hidePosIfNeeded).done(function(){
-                        change_done.resolve()
-                        $cblog(4,e,"Done chaining focus after updating multi.") 
-                    })
+                    return ajax_done.then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus")).then($hidePosIfNeeded)
                     
+                }).done(function(){
+                    change_done.resolve()
+                    $cblog(4,e,"Done chaining focus after updating multi.") 
                 });
+
 
                 return change_done.promise()
                 
@@ -797,8 +800,8 @@
                 $cblog(4,e,"value is: "+newval)
                 //{"statevar":"datetime","newval":{myname : parseInt(newval)}}
                 var ajax_done = $.ajax({url: "/uihandler",data: {"statevar":"datetime","subfield":myname,"newval":parseInt(newval)},type: "PUT"})
-                var plotting = ajax_done.then($("#plotbutton").triggerHandler("click"))
-                return plotting
+                //var plotting = ajax_done.then($("#plotbutton").triggerHandler("click"))
+                return ajax_done
                 //return ajax_done
             });
 
@@ -1003,7 +1006,7 @@
                                     .range(["seagreen","orange", "red"]);
                         
                         thechart.transition()
-                                    .duration(0)
+                                    .duration(1)
                                     .style("width", function(d) { return (d.value-d.min)/(d.max-d.min) * 100 + "%"; })
                                     .style("background-color", function(d) { return color((d.value-d.min)/(d.max-d.min))})
                                     .text(function(d) { return d.name+': '+String(d.value); });
@@ -1027,7 +1030,7 @@
                     } //end of success function
                 }); //end of the ajax
 
-                thedef.resolve()
+                updating_chart.done(thedef.resolve)
 
                 return thedef.promise()
 
@@ -1399,7 +1402,7 @@
                                     var xdone = $xvar_sel.triggerHandler("focus")
                                     var ydone = $yvar_sel.triggerHandler("focus")
                                     var zdone = $zvar_sel.triggerHandler("focus")
-                                    return $.when(xdone,ydone,zdone).then($.when_all_trigger('.positioninput,.dateinput',"focus"));
+                                    return $.whenall([xdone,ydone,zdone]).then($.when_all_trigger('.positioninput,.dateinput',"focus"));
                                 })
                             .then(function (thedata) {
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Now trigger bounds focus")
