@@ -58,6 +58,8 @@
             $all_var_sel = $("#xvar_select, #yvar_select, #zvar_select")
             $all_var_log = $("#xlog,#ylog,#zlog")
             $all_var_bounds = $("#xboundsmin,#xboundsmax,#yboundsmin,#yboundsmax,#zboundsmin,#zboundsmax")
+            //For triggering focus, so that we don't do a redundant Ajax
+            $all_var_boundsmin = $("#xboundsmin,#yboundsmin,#zboundsmin")
             
             //Selector for everything
             $all_controls = $("#model_select, #plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
@@ -355,7 +357,7 @@
             				$(e.target).val(json[myname])
                             $cblog(3,e,"Plottype changed to: "+newval)
             				var changedtype = $plottype_sel.triggerHandler("change")
-            				changedtype.then(done.resolve())
+            				changedtype.done(done.resolve)
             				//$(e.target).fadeOut(100).fadeIn(100)
             			}
                     }
@@ -418,10 +420,10 @@
                     })
                     .then($init_sel(myname))
                     .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
-                    .then($('#'+myname.charAt(0)+'boundsmax').triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $init_sel(myname).then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus")).then($('#'+myname.charAt(0)+'boundsmax').triggerHandler("focus"))
+                    $init_sel(myname)
+                    .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
                     .done(initializing.resolve)
                 }
                 
@@ -434,6 +436,12 @@
                 e.preventDefault();
                 $cblog(5,e,"In callback")
                 var myname = $(e.target).attr("name")
+                var myid = $(e.target).attr("ID")
+                if ( $(e.target).hasClass('max') ) {
+                    var mysib = $('#'+myid.split('bounds')[0]+"boundsmin")
+                } else if ( $(e.target).hasClass('min') ) {
+                    var mysib = $('#'+myid.split('bounds')[0]+"boundsmax")
+                } 
                 var the_ajax = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
                     success: function(json){
                         var newbounds = json[myname]
@@ -444,15 +452,22 @@
                         //console.log(newbounds)
                         if ( $(e.target).hasClass('max') ) {
                             var newval = $format_number(newbounds[1]) //Use the second number in the comma separated string
+                            var newsibval = $format_number(newbounds[0]) //Sibling element is the first number
                         } else if ( $(e.target).hasClass('min') ){
                             var newval = $format_number(newbounds[0]) //Use the first number in the comma separated string
-                        }
-                        $(e.target).val(newval)    
-                        //if ($(e.target).val() != newval) {
-                        //    $(e.target).val(newval)
+                            var newsibval = $format_number(newbounds[1]) //Sibling element is the first number
+                        } 
+                        if ($(e.target).val() != newval) {
+                            $(e.target).val(newval)
                             //$(e.target).fadeOut(100).fadeIn(100) 
-                        //    $cblog(4,e,"Bounds changed to "+newval)
-                        //}
+                            $cblog(4,e,"Bounds changed to "+newval)
+                        }
+                        if (mysib.val() != newsibval) {
+                            mysib.val(newsibval)
+                            //$(e.target).fadeOut(100).fadeIn(100) 
+                            $cblog(4,e,"Sibling bounds changed to "+newsibval)
+                        }
+                        
                         
                     }
                 });
@@ -689,8 +704,7 @@
                     ajax_done
                     //.then($selobj[myname]['sel'].triggerHandler("focus"))
                     .then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus"))
-                    .then($("#"+myname.charAt(0)+"boundsmax").triggerHandler("focus"))
-                    .then($hidePosIfNeeded).then($.when_all_trigger(".positioninput","focus")).done(function(){
+                    .then($hidePosIfNeeded).done(function(){
                         change_done.resolve()
                         $cblog(4,e,"Done chaining focus after updating multi.") 
                     })
@@ -1372,7 +1386,7 @@
                             .then(function (thedata) {
                                     $logit(4,"syching.done: AJAX: POST:replotnow : success","Now trigger bounds focus")
                                     //trigger all bounds to refresh
-                                    return $.when_all_trigger($all_var_bounds,"focus")
+                                    return $.when_all_trigger($all_var_boundsmin,"focus")
                                 })
                             .then($("#dynamicdriverdiv").triggerHandler("click"))
                             .then($("#datepanel_title").triggerHandler("click"))
