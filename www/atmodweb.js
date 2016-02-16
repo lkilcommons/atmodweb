@@ -244,7 +244,7 @@
                 return $.whenall(the_promises)
             }
 
-            $control_mode = "enabledisable" //Show and hide disabled controls or grey them out
+            $control_mode = "showhide" //Show and hide disabled controls or grey them out
             $disable_control = function(the_selector) {
                 if ( $control_mode === 'enabledisable' ) {
                     $(the_selector).prop("disabled",true).children().prop("disabled",true)
@@ -430,7 +430,7 @@
                         var optionind = $.inArray(selection,optionValues)
                         if ( optionind === -1 ) {
                             $cblog(2,e,"Option "+selection+" is not sane, defaulting to "+optionValues[0]+" and triggering change")
-                            $(e.target).val(optionValues[0])
+                            $(e.target).val(optionValues[optionValues.length-1])
                             $(e.target).triggerHandler("change").done(checkingSelection.resolve)
                         } else {
                             $(e.target).val(optionValues[optionind])
@@ -438,12 +438,10 @@
                         }
                         return checkingSelection.promise()
                     })
-                    .then($init_sel(myname))
                     .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
                     .done(initializing.resolve)
                 } else {
-                    $init_sel(myname)
-                    .then($('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus"))
+                    $('#'+myname.charAt(0)+'boundsmin').triggerHandler("focus")
                     .done(initializing.resolve)
                 }
                 
