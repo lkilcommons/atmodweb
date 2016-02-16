@@ -224,9 +224,9 @@
                 //if (lon_in) { $("#loninput").attr('disabled',true) } else { $("#loninput").removeAttr('disabled') }
                 //if (alt_in) { $("#altinput").attr('disabled',true) } else { $("#altinput").removeAttr('disabled') }
                 //var animopts = {'duration':0,'complete':def.resolve}
-                if (lat_in) { $("#latinputlbl,#latinputbr").hide() } else { $("#latinputlbl,#latinputbr").show() } 
-                if (lon_in) { $("#loninputlbl,#loninputbr").hide() } else { $("#loninputlbl,#loninputbr").show() }
-                if (alt_in) { $("#altinputlbl").hide() } else { $("#altinputlbl").show() }        
+                if (lat_in) { $disable_control("#latinputlbl,#latinputbr") } else { $enable_control("#latinputlbl,#latinputbr") } 
+                if (lon_in) { $disable_control("#loninputlbl,#loninputbr") } else { $enable_control("#loninputlbl,#loninputbr") }
+                if (alt_in) { $disable_control("#altinputlbl") } else { $enable_control("#altinputlbl") }        
                 
                 def.resolve()
                 return def.promise()
@@ -242,6 +242,23 @@
                 })
                 if (debug == true) {console.log("Waiting for "+the_names+" to trigger "+the_event)}
                 return $.whenall(the_promises)
+            }
+
+            $control_mode = "enabledisable" //Show and hide disabled controls or grey them out
+            $disable_control = function(the_selector) {
+                if ( $control_mode === 'enabledisable' ) {
+                    $(the_selector).prop("disabled",true).children().prop("disabled",true)
+                } else if ( $control_mode === 'showhide') {
+                    $(the_selector).hide()
+                }
+            }
+
+            $enable_control = function(the_selector) {
+                if ( $control_mode === 'enabledisable' ) {
+                    $(the_selector).prop("disabled",false).children().prop("disabled",false)
+                } else if ($control_mode === 'showhide') {
+                    $(the_selector).show()
+                }
             }
 
             //set all var selects to their value in the controlstate
@@ -544,17 +561,17 @@
                     
                     //Trigger the xvar, yvar to populate
                     
-                    $(".xvar").show()  
+                    $enable_control(".xvar")
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.attr("multiple","true")
-                    $("#xlog_label").show()
-                    
-                    $(".yvar").show()  
+                    $enable_control("#xlog_label,#xlog")
+
+                    $enable_control(".yvar")
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.attr("multiple","true")
-                    $("#ylog_label").show()
-                    
-                    $(".zvar").hide();
+                    $enable_control("#ylog_label,#ylog")
+
+                    $disable_control(".zvar")
                     $zvar_sel.removeAttr("multiple")
                 }
 
@@ -562,19 +579,19 @@
                 {
                     $(".zvar").show()
                     
-                    $(".xvar").show()                    
+                    $enable_control(".xvar")                 
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
-                    $("#xlog_label").hide()
+                    $disable_control("#xlog_label,#xlog")
 
-                    $(".yvar").show()
+                    $enable_control(".yvar")
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
-                    $("#ylog_label").hide()
+                    $disable_control("#ylog_label,#ylog")
 
                     $zvar_sel.addClass("initialize_me")
                     $zvar_sel.removeAttr("multiple")
-                    $("#zlog_label").show()
+                    $enable_control("#zlog_label")
 
                 }
 
@@ -587,22 +604,22 @@
 
                     //defrd.done(xvar_trigger,yvar_trigger)
 
-                    $(".zvar").show()
-                    
+                    $enable_control(".zvar")
+
                     $xvar_sel.addClass("initialize_me")
                     $xvar_sel.removeAttr("multiple")
-                    $("#xlog_label").hide()
-                    $(".xvar").hide()
-                    
+                    $disable_control("#xlog_label,#xlog")
+                    $disable_control(".xvar")
+
                     $yvar_sel.addClass("initialize_me")
                     $yvar_sel.removeAttr("multiple")
-                    $("#ylog_label").hide()
-                    $(".yvar").hide()
-                    
+                    $disable_control("#ylog_label,#ylog")
+                    $disable_control(".yvar")
+
                     $zvar_sel.addClass("initialize_me")
                     $zvar_sel.removeAttr("multiple")
-                    $("#zlog_label").show()
-                        
+                    $enable_control("#zlog_label")
+
                 }
                 
                 $all_var_log.prop("checked",false)
@@ -1508,6 +1525,7 @@
                 // M press
                 $(".model").toggle()
             }
+            
             if(e.which == 71) {
                 //G press
                 var gif_mode_on = $.ajax({url: "/uihandler", data: {"posttype":"gifmode"},type: "POST",
