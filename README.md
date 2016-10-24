@@ -24,7 +24,6 @@ On linux systems, (tested so far on Ubuntu 14.04, running the Anaconda python di
 * Matplotlib 
 * Basemap (`conda install basemap` if using Anaconda, or `pip install basemap` to install from PyPI)
 * MsisPy - python (f2py wrapper) implementation of NRLMSISE00 __Not yet available publically (waiting on blessing from NRL)__
-* HWMPy - python (f2py wrapper) implementation of Horizontal Wind Model 07 __Not yet available publically (waiting on blessing from maintainers)__
 
 Email me __liam.kilcommons at University of Colorado, Boulder (colorado.edu)__ for access to the model wrappers. Out of academic courtesy, they won't be released publicly until permission is given, though the wrappers themselves are GPLv3.
 
