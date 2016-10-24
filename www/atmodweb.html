@@ -20,7 +20,7 @@
             </div>
             <div ID="branding_div">
                     <a href='http://ccar.colorado.edu/seda'><img class="branding" alt="SEDA logo" src="www/seda_banner_short_crop.png" ></img></a>
-                    <a href='http:/www.colorado.edu/aerospace/'><img class="branding" alt="CU Aerospace logo" src="www/cu-aero.jpg" ></img></a>
+                    <a href='http://www2.hao.ucar.edu/'><img class="branding" alt="High Altitude Observatory logo" src="www/hao_logo_med.gif" ></img></a>
             </div>
             <div ID="controlpanel">
                 <span> Logged in as: <strong ID="username"></strong><a href="/login"> (Not you?) </a></span>
@@ -73,14 +73,6 @@
                     <h2 class="h2title">Solar Activity Bar Graph</h2>
 
                 </div>
-
-                <div ID="debugpanel" class="panel debug">
-                    
-                    <h2 class="h2title debug">Debugging</h2>
-                    <label ID='setlabel' class="debug">Send PUT Request<input type="text" name="statevar" class="debug" value="mapproj" ID="putstatevar"><input type="text" name="value" class="debug" value="moll" ID="putnewval"></label>
-                    
-                </div>
-
              
             </div>
             
@@ -89,18 +81,9 @@
 
                     <h2 class="h2title">Plot Options</h2>
 
-                    <label class="model"> Model:
-                        <select ID="model_select" name="modelname" class="model">
-                            <option value="msis">NRLMSISE00</option>
-                            <option value="iri">IRI2011</option>
-                        </select>
-                    </label>
-
                     <label> Type of plot: 
                         <select ID="plottype_select" name="plottype" class="plottype" title="This controls what type of plot you will being making">
-                            <option value="null">Choose a plot type...</option>
                             <option value="line">Line Plot</option>
-                            <option value="pcolor">Heatmap/Pseudocolor</option>
                             <option value="map">Map</option>
                         </select>
                     </label>

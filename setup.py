@@ -16,10 +16,6 @@ from setuptools import setup, Extension
 from setuptools.command import install as _install
 from numpy.distutils.core import setup, Extension
 
-#This is a stripped down version of the setup file for davitpy. I stripped out everything
-#except MSIS so that it could be used independantly
-# This code is covered under the DavitPy license (GPL v3), which is included with this software
-
 #blah.extensionBlah is the way to specify that you want extensionBlah to be a member of package blah
 
 setup(name='atmodweb',

@@ -428,7 +428,7 @@ class Synchronizer(object):
 		self.controlstate.bind_changed('datetime',self.datetime_changed)
 		self.controlstate.bind_changed('drivers',self.drivers_changed)
 		self.controlstate.bind_changed('mapproj',self.mapproj_changed)
-		self.controlstate.bind_changed('modelname',self.modelname_changed)
+		#self.controlstate.bind_changed('modelname',self.modelname_changed)
 
 	def initModelRunner(self):
 		"""Does a first run of the model specified in the controlstate to make sure that there's a reference run. 
@@ -552,12 +552,12 @@ class Synchronizer(object):
 		if self.controlstate['mapproj'] in self.pdh.supported_projections:
 			self.pdh.mapproj = self.controlstate['mapproj']
 
-	def modelname_changed(self):
-		"""Model name is changed, big reinit"""
-		if self.controlstate['modelname'] in ['msis','iri']:
-			self.initModelRunner()
-			self.refreshSelectOptions()
-			self.refreshModelRunOptions()
+	#def modelname_changed(self):
+	#	"""Model name is changed, big reinit"""
+	#	if self.controlstate['modelname'] in ['msis','iri']:
+	#		self.initModelRunner()
+	#		self.refreshSelectOptions()
+	#		self.refreshModelRunOptions()
 
 	#Set what we are allowed to plot
 	def refreshSelectOptions(self):
@@ -736,9 +736,9 @@ class Synchronizer(object):
 		ffr = force_full_refresh
 		fauto = force_autoscale		
 
-		if self.controlstate['plottype'] == 'pcolor' and self.controlstate.changed("xvar") or self.controlstate.changed("yvar"):
-			self.controlstate['run_model_on_refresh']=True
-			self.log.info("We are plotting a pcolor type plot, and x or y was changed, so we will need to re-run the model, since what is held constant has changed")
+		#if self.controlstate['plottype'] == 'pcolor' and self.controlstate.changed("xvar") or self.controlstate.changed("yvar"):
+		#	self.controlstate['run_model_on_refresh']=True
+		#	self.log.info("We are plotting a pcolor type plot, and x or y was changed, so we will need to re-run the model, since what is held constant has changed")
 
 		if self.controlstate.changed('plottype') or ffr:
 			#Determine if we need to rerun the model
@@ -767,7 +767,6 @@ class Synchronizer(object):
 
 			self.log.info("Datetime was changed since last refresh. Will rerun %s with datetime %s" % (self.controlstate['modelname'],
 				self.mr.nextrun.drivers['dt'].strftime('%c')))
-
 
 		if self.controlstate.changed('lat') or ffr:
 			if 'Latitude' not in [self.controlstate['xvar'],self.controlstate['yvar']]:
@@ -1290,38 +1289,38 @@ class FakeCanvas(object):
 		lw = .3
 		lp = 0
 		pd = .5
-		if self.atmo.syncher.pdh.plottype=='pcolor':
+		# if self.atmo.syncher.pdh.plottype=='pcolor':
 
-			mpl.artist.setp(self.ax.get_xmajorticklabels(),size=fs,rotation=30)
-			mpl.artist.setp(self.ax.get_ymajorticklabels(),size=fs)
-			mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
+		# 	mpl.artist.setp(self.ax.get_xmajorticklabels(),size=fs,rotation=30)
+		# 	mpl.artist.setp(self.ax.get_ymajorticklabels(),size=fs)
+		# 	mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
 						
-			#Label is a text object
-			self.ax.xaxis.label.set_fontsize(fs)
-			self.ax.yaxis.label.set_fontsize(fs)
-			self.ax.xaxis.labelpad=lp
-			self.ax.yaxis.labelpad=lp
+		# 	#Label is a text object
+		# 	self.ax.xaxis.label.set_fontsize(fs)
+		# 	self.ax.yaxis.label.set_fontsize(fs)
+		# 	self.ax.xaxis.labelpad=lp
+		# 	self.ax.yaxis.labelpad=lp
 			
-			#Adjust tick size
-			self.ax.xaxis.set_tick_params(width=w,pad=pd)
-			self.ax.yaxis.set_tick_params(width=w,pad=pd)
+		# 	#Adjust tick size
+		# 	self.ax.xaxis.set_tick_params(width=w,pad=pd)
+		# 	self.ax.yaxis.set_tick_params(width=w,pad=pd)
 
-			#Colorbar Ticks
-			self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd+.5)
-			self.atmo.syncher.pdh.cb.ax.xaxis.label.set_fontsize(fs)
-			self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd+.5)
-			self.atmo.syncher.pdh.cb.outline.set_linewidth(w)
+		# 	#Colorbar Ticks
+		# 	self.atmo.syncher.pdh.cb.ax.xaxis.set_tick_params(width=w,pad=pd+.5)
+		# 	self.atmo.syncher.pdh.cb.ax.xaxis.label.set_fontsize(fs)
+		# 	self.atmo.syncher.pdh.cb.ax.yaxis.set_tick_params(width=w,pad=pd+.5)
+		# 	self.atmo.syncher.pdh.cb.outline.set_linewidth(w)
 
-			self.ax.grid(True,linewidth=.1)
-			#Adjust axes border size
-			for axis in ['top','bottom','left','right']:
-				self.ax.spines[axis].set_linewidth(lw)
-				#self.pdh.cb.spines[axis].set_linewidth(lw)
+		# 	self.ax.grid(True,linewidth=.1)
+		# 	#Adjust axes border size
+		# 	for axis in ['top','bottom','left','right']:
+		# 		self.ax.spines[axis].set_linewidth(lw)
+		# 		#self.pdh.cb.spines[axis].set_linewidth(lw)
 
-			self.ax.title.set_fontsize(fs)
-			self.ax.title.set_fontweight('bold')
+		# 	self.ax.title.set_fontsize(fs)
+		# 	self.ax.title.set_fontweight('bold')
 			
-		elif self.atmo.syncher.pdh.plottype=='map':
+		if self.atmo.syncher.pdh.plottype=='map':
 			#Colorbar Ticks
 			self.ax.title.set_fontsize(fs)
 			self.ax.title.set_fontweight('bold')
@@ -1766,7 +1765,7 @@ if __name__ == '__main__':
 		
 	cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})
 	cherrypy.config.update({'log.screen':False})
-
+	
 	cherrypy.log.screen = False
 	cherrypy.log.access_log.propagate = False
 

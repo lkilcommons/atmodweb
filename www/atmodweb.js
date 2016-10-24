@@ -38,7 +38,7 @@
             
             });
         */
-        var debug = true;
+        var debug = false;
 
         $(document).ready(function(){
             $plottype_sel = $("#plottype_select");
@@ -62,7 +62,7 @@
             $all_var_boundsmin = $("#xboundsmin,#yboundsmin,#zboundsmin")
             
             //Selector for everything
-            $all_controls = $("#model_select, #plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
+            $all_controls = $("#plottype_select, #xvar_select, #yvar_select, #zvar_select, #xlog, #ylog, #zlog, .xbounds, .ybounds, .zbounds,.dateinput,.positioninput,.dynamicinput")
 
             //Set up the functions to change controlstates
 
@@ -71,7 +71,7 @@
             //Init stuff - set debug options - temporary stuff
             $("#debugpanel").addClass("debug_on").addClass("initialize_me")
             $("#dynamicdriverdiv").addClass("initialize_me")
-            $(".debug").hide() // hide debug stuff till we press F1
+            //$(".debug").hide() // hide debug stuff till we press F1
 
             //Create progressbar for loding 
             $("#loading_progress").progressbar()
@@ -215,9 +215,10 @@
                 var lat_in = $.inArray("Latitude",[xvar,yvar,zvar]) !== -1
                 var lon_in = $.inArray("Longitude",[xvar,yvar,zvar])  !== -1
                 var alt_in = $.inArray("Altitude",[xvar,yvar,zvar]) !== -1
-                var debug = true
-                if (debug == true) { console.log([xvar,yvar,zvar])}
-                if (debug == true) { console.log([lat_in,lon_in,alt_in])}
+                
+                //var debug = true
+                //if (debug == true) { console.log([xvar,yvar,zvar])}
+                //if (debug == true) { console.log([lat_in,lon_in,alt_in])}
                 //$("#latinputlbl").hide()
                 //$("#loninputlbl").hide()
 
@@ -579,27 +580,29 @@
 
                     $disable_control(".zvar")
                     $zvar_sel.removeAttr("multiple")
-                }
-
-                if (selection == "pcolor")
-                {
-                    $(".zvar").show()
                     
-                    $enable_control(".xvar")                 
-                    $xvar_sel.addClass("initialize_me")
-                    $xvar_sel.removeAttr("multiple")
-                    $disable_control("#xlog_label,#xlog")
-
-                    $enable_control(".yvar")
-                    $yvar_sel.addClass("initialize_me")
-                    $yvar_sel.removeAttr("multiple")
-                    $disable_control("#ylog_label,#ylog")
-
-                    $zvar_sel.addClass("initialize_me")
-                    $zvar_sel.removeAttr("multiple")
-                    $enable_control("#zlog_label")
-
+                    
                 }
+
+                //if (selection == "pcolor")
+                //{
+                //    $(".zvar").show()
+                //    
+                //    $enable_control(".xvar")                 
+                //    $xvar_sel.addClass("initialize_me")
+                //    $xvar_sel.removeAttr("multiple")
+                //    $disable_control("#xlog_label,#xlog")
+                //
+                //    $enable_control(".yvar")
+                //    $yvar_sel.addClass("initialize_me")
+                //    $yvar_sel.removeAttr("multiple")
+                //    $disable_control("#ylog_label,#ylog")
+
+                //    $zvar_sel.addClass("initialize_me")
+                //    $zvar_sel.removeAttr("multiple")
+                //    $enable_control("#zlog_label")
+
+                //}
 
                 if (selection == "map")
                 {   
@@ -635,63 +638,63 @@
                     $cblog(4,e,"triggering focus from plottype change") 
                     $.when_all_trigger($all_var_log,'change')
                     .then($.when_all_trigger($all_var_sel,"focus"))
-                    .then($hidePosIfNeeded).done(defrd.resolve);
+                    .done(defrd.resolve);
                 })
             
                 return defrd.promise() //Return a Deferred so we can see if the callback finished
             });
 
             //--Model Select Dropdown
-            $("#model_select").on("change",function(e) {
-                var changing_model = $.Deferred()
-                $hide_controls("Changing models to: "+ $(e.target).val(),changing_model)
-                changing_model.notify("Running "+$(e.target).val()+"...",5)
-                $cblog(5,e,"In callback")
-                var myname = $(e.target).attr("name")
-                var selection = $(e.target).val()
-                $cblog(4,e,"selection is "+String(selection))
-                var putting_new_model = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
-                            success: function (ret) {
-                                changing_model.notify("Updating UI...",75)
-                                $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
-                                $all_var_sel.addClass("initialize_me")
-                                $cblog(3,e,"dynamic driver div told to reinit,triggering all focus") 
-                                return $.when_all_trigger($all_controls,"focus").then($("#dynamicdriverdiv").triggerHandler("click")).then($init_sel('all')).then($show_controls)
-                            }   
-                })
+            //$("#model_select").on("change",function(e) {
+            //    var changing_model = $.Deferred()
+            //    $hide_controls("Changing models to: "+ $(e.target).val(),changing_model)
+            //    changing_model.notify("Running "+$(e.target).val()+"...",5)
+            //    $cblog(5,e,"In callback")
+            //    var myname = $(e.target).attr("name")
+            //    var selection = $(e.target).val()
+            //    $cblog(4,e,"selection is "+String(selection))
+            //    var putting_new_model = $.ajax({url: "/uihandler",data: {"statevar":myname,"newval":selection},type: "PUT",
+            //                success: function (ret) {
+            //                    changing_model.notify("Updating UI...",75)
+            //                    $("#dynamicdriverdiv").addClass("initialize_me") // Reinit drivers dropdown
+            //                    $all_var_sel.addClass("initialize_me")
+            //                    $cblog(3,e,"dynamic driver div told to reinit,triggering all focus") 
+            //                    return $.when_all_trigger($all_controls,"focus").then($("#dynamicdriverdiv").triggerHandler("click")).then($init_sel('all')).then($show_controls)
+            //                }   
+            //    })
 
-                return $putting_new_model
-            });
+            //    return $putting_new_model
+            //});
 
-            $("#model_select").on("focus",function(e) {
+            // $("#model_select").on("focus",function(e) {
                 
-                $cblog(5,e,"In callback")
-                var myname = $(e.target).attr("name")
-                var oldval = $(e.target).val()
-                $cblog(4,e,"selection is "+String(oldval))
-                var checking_model = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
-                            success: function (json) {
-                                $cblog(5,e,"New model is: "+String(json[myname]))
-                                $(e.target).val(json[myname])
-                            }
-                }) //Chain in the check to see if we need to trigger the change event
-                .then(function () {
-                    //Call the changed handler if nessecary
-                    if ( oldval !== $(e.target).val() ){
-                        $cblog(4,e,"Model name has changed, triggering change event")
-                        return $(e.target).triggerHandler("change")
-                    }
-                    else {
-                        var def = $.Deferred().resolve() 
-                        return def.promise() //Just return a pre-resolved deferred
-                    }    
-                });
+            //     $cblog(5,e,"In callback")
+            //     var myname = $(e.target).attr("name")
+            //     var oldval = $(e.target).val()
+            //     $cblog(4,e,"selection is "+String(oldval))
+            //     var checking_model = $.ajax({url: "/uihandler",data: {"statevar":myname},type: "GET",
+            //                 success: function (json) {
+            //                     $cblog(5,e,"New model is: "+String(json[myname]))
+            //                     $(e.target).val(json[myname])
+            //                 }
+            //     }) //Chain in the check to see if we need to trigger the change event
+            //     .then(function () {
+            //         //Call the changed handler if nessecary
+            //         if ( oldval !== $(e.target).val() ){
+            //             $cblog(4,e,"Model name has changed, triggering change event")
+            //             return $(e.target).triggerHandler("change")
+            //         }
+            //         else {
+            //             var def = $.Deferred().resolve() 
+            //             return def.promise() //Just return a pre-resolved deferred
+            //         }    
+            //     });
 
-                return checking_model
-            });
+            //     return checking_model
+            // });
 
-            //Hide it for now because it doesn't work
-            $(".model").hide()
+            // //Hide it for now because it doesn't work
+            // $(".model").hide()
             
             //--X,Y,Z Variable Select Dropdowns 
             $all_var_sel.on("change",function(e) {
@@ -724,13 +727,14 @@
                     var ajax_done = $.ajax({url: "/uihandler",data: $.param({"statevar":myname,"newval":selection}, true),type: "PUT"})
                     //Make sure the bounds are up to date
                     
-                    return ajax_done.then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus")).then($hidePosIfNeeded)
+                    return ajax_done.then($("#"+myname.charAt(0)+"boundsmin").triggerHandler("focus"))
                     
                 }).done(function(){
                     change_done.resolve()
                     $cblog(4,e,"Done chaining focus after updating multi.") 
                 });
 
+                //$hidePosIfNeeded()
 
                 return change_done.promise()
                 
@@ -1432,12 +1436,9 @@
             //When we have the controls properly setup initially, make 
             //sure that the position inputs are setup correctly,
             //and that the dynamic drivers chart has been updated
-            initial_plot.done($hidePosIfNeeded,$("#driverchart").triggerHandler('focus')) 
+            initial_plot.done($("#driverchart").triggerHandler('focus')) 
 
             
-
-            
-
             //Bind a change handler to the username field
             //$("#username").on("change",function(e) {
                 //e.preventDefault();
@@ -1463,12 +1464,12 @@
             //     return doneprocessing
             // })
                 
-            $("#putnewval").on("change",function(e) {
-                var newstatevar = $("#putstatevar").val()
-                var newvalue = $("#putnewval").val()
-                var dangerous = $.ajax({url: "/uihandler", data: {"statevar":newstatevar,"newval":newvalue},type: "PUT",dataType: "json"})
-                return dangerous.done($("#plotbutton").triggerHandler("click"))
-            })
+            //$("#putnewval").on("change",function(e) {
+            //    var newstatevar = $("#putstatevar").val()
+            //    var newvalue = $("#putnewval").val()
+            //   var dangerous = $.ajax({url: "/uihandler", data: {"statevar":newstatevar,"newval":newvalue},type: "PUT",dataType: "json"})
+            //    return dangerous.done($("#plotbutton").triggerHandler("click"))
+            //})
 
             //Bind a click handler to the debug panel to hide it on click, or initialize it if nessecary
             //$("#debugpanel").on('click',function(e) {
@@ -1513,10 +1514,10 @@
 
         $(document).keypress(function(e) {
             console.log("keypress id = "+e.which)
-            if(e.which == 68) {
+            //if(e.which == 68) {
                 // D pressed
-                $(".debug").toggle()
-            }
+            //    $(".debug").toggle()
+            //}
             if(e.which == 76) {
                 // L press, toggle console logging
                 if ( $consolelogon ) {
@@ -1525,10 +1526,10 @@
                     $consolelogon = true
                 }
             }
-            if(e.which == 77) {
+            //if(e.which == 77) {
                 // M press
-                $(".model").toggle()
-            }
+            //    $(".model").toggle()
+            //}
 
             if(e.which == 71) {
                 //G press
