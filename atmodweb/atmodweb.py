@@ -20,7 +20,7 @@ from cherrypy._cpdispatch import Dispatcher
 import copy #Dicts must be deepcopied.
 
 #Import the model running code
-from atmodexplorer.atmodbackend import ModelRunner, MsisRun, ModelRun, PlotDataHandler
+from atmodbackend import ModelRunner, MsisRun, ModelRun, PlotDataHandler
 
 # create logger 
 log = logging.getLogger('atmodweb_root')
