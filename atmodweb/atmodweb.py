@@ -1717,6 +1717,10 @@ if __name__ == '__main__':
 	webapp = MultiUserAtModWebObj()
 	cherrypy.tools.auth = cherrypy.Tool('before_handler',webapp.check_auth)
 	conf = {
+		'server.socket_host': '127.0.0.1',
+    	'server.socket_port': 8080,
+    	#'tools.proxy.on': True,
+        #'tools.proxy.base': 'http://www.example.com'
 		 '/': {
 			'tools.sessions.on': True,
 			#'tools.sessions.storage_type':"memcached",
@@ -1763,7 +1767,7 @@ if __name__ == '__main__':
 		conf['/']['tools.auth_digest.get_ha1']=auth_digest.get_ha1_dict_plain(USERS)
 		conf['/']['tools.auth_digest.key']='b565d27146791cfc'
 		
-	cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})
+	#cherrypy.config.update({'server.socket_host':os.getenv('CHERRYPY_IP'),'server.socket_port': 8080})
 	cherrypy.config.update({'log.screen':False})
 	
 	cherrypy.log.screen = False

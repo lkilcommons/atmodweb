@@ -5,7 +5,7 @@
 # 
 # A project of the University of Colorado Space Environment Data Analysis Group (CU-SEDA)
 # Liam Kilcommons
-# December, 2014
+# January, 2014
 
 import os
 import glob
@@ -26,7 +26,7 @@ setup(name='atmodweb',
       url = "http://github.com/lkilcommons/atmodweb",
       download_url = "https://github.com/lkilcommons/atmodweb/",
       long_description = "None yet",
-      install_requires=['numpy','msispy','matplotlib','BaseMap','atmodexplorer','cherrypy'],
+      install_requires=['numpy','msispy','matplotlib','basemap','cherrypy'],
       packages=['atmodweb'],
       package_data={}, #data names must be list
       license='LICENSE.txt',
