@@ -1,6 +1,6 @@
 # AtModWeb
 ### _An web application for visually exploring (empirical) atmospheric models_
-This is a project of the University of [Colorado Space Environment Data Analysis Group (SEDA)](http://www.ccar.colorado.edu/seda), a part of the Colorado Center for Astrodynamics Research (CCAR), and Aerospace Engineering Sciences (AES).
+This is a project of the University of [Colorado Space Environment Data Analysis Group (SEDA)](http://www.ccar.int.colorado.edu/seda), a part of the Colorado Center for Astrodynamics Research (CCAR), and Aerospace Engineering Sciences (AES).
 
 This tool was inspired by the similar IDL tool developed at National Center for Atmospheric Research's High Altitude Observatory (NCAR HAO) in 2003 as part of the Center for Integrated Space Weather Modeling (CISM) summer school.
 
