@@ -27,7 +27,10 @@ from collections import OrderedDict
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ModuleNotFoundError:
+    from io import StringIO
 
 class RangeCheckOD(OrderedDict):
     """
@@ -393,8 +396,9 @@ class ModelRun(object):
         #Parse starting with the longest variable names,
         #this prevents names in the expression which contain other variables
         #i.e. N2 will be parsed out before N
-        vars_by_longest_first = self.vars.keys()
-        vars_by_longest_first.sort(cmp=lambda s1,s2: len(s2)-len(s1))
+        vars_by_longest_first = [key for key in self.vars.keys()]
+        vars_by_longest_first = sorted(vars_by_longest_first,
+                                        key=lambda a: len(a))
         parsed_expr = expr
         for var in vars_by_longest_first:
             if var in parsed_expr:
@@ -553,7 +557,7 @@ class ModelRun(object):
 
     def __getitem__(self,key):
         """Easy syntax for returning data"""
-        if hasattr(key, '__iter__'): #If key is a sequence of some kind
+        if hasattr(key, '__iter__') and not isinstance(key,str): #If key is a sequence of some kind
             self.log.debug("Getting multiple variables/limits %s" % (str(key)))
             var = []
             lim = []
@@ -996,9 +1000,9 @@ class PlotDataHandler(object):
             thislen = len(vardata[0].flatten())
             thisshape = vardata[0].shape
             #Make sure all the arguments have same length, even if left as default
-            if not hasattr(units,'__iter__') : #if it isn't a list, make it one
+            if not hasattr(units,'__iter__') and not isinstance(units,str) : #if it isn't a list, make it one
                 units = [units for i in range(len(vardata))]
-            if not hasattr(description,'__iter__') : #if it isn't a list, make it one
+            if not hasattr(description,'__iter__') and not isinstance(description,str): #if it isn't a list, make it one
                 description = [description for i in range(len(vardata))]
 
         #Check total number of points
@@ -1096,7 +1100,7 @@ class PlotDataHandler(object):
 
         zee = self.z.flatten()
         zint = 0.
-        for k in xrange(len(lat)-1):
+        for k in range(len(lat)-1):
             theta1 = (90.-lat[k])/180.*np.pi
             theta2 = (90.-lat[k+1])/180.*np.pi
             dphi = (lon[k+1]-lon[k])/180.*np.pi
@@ -1208,8 +1212,8 @@ class PlotDataHandler(object):
                 xnm = xnm[:-1] #Remove last comma
                 xnm += '[%s]' % (endut) if endut is not None else ''
 
-                print xnm
-                print self.xbounds
+                print(xnm)
+                print(self.xbounds)
 
                 ynm = self.yname if self.ydesc is None else self.ydesc
                 ynm += '' if self.yunits is None else '[%s]' % (str(self.yunits))
@@ -1247,7 +1251,7 @@ class PlotDataHandler(object):
                     self.ax.hold(True)
                     #Compute new bounds as incuding all bounds
 
-                    print self.ybounds[i]
+                    print(self.ybounds[i])
                     ybnds[0] = ybnds[0] if ybnds[0]<self.ybounds[i][0] else self.ybounds[i][0]
                     ybnds[1] = ybnds[1] if ybnds[1]>self.ybounds[i][1] else self.ybounds[i][1]
 

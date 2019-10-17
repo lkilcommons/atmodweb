@@ -107,7 +107,7 @@ class ControlState(dict):
         """
         self.log.debug("Now pushing controlstate contents to cherrypy.session")
         for key in self:
-            if cherrypy.session.has_key(key):
+            if key in cherrypy.session:
                 logging.warn('Overwriting already-existing key %s in session.' % (key))
             cherrypy.session[key] = dict.__getitem__(self,key)
 
@@ -614,7 +614,7 @@ class Synchronizer(object):
         Convenience function for testing whether the currently selected x or y variables (controlstate['xvar'],etc) are multiple vars
         i.e. stored as lists internally.
         """
-        return hasattr(self.controlstate[coord+'var'],'__iter__') #just tests if the controlstate is a list/tuple
+        return isinstance(self.controlstate[coord+'var'],(list,tuple)) #just tests if the controlstate is a list/tuple
 
     def is_position(self,coord):
         """
@@ -626,6 +626,8 @@ class Synchronizer(object):
         .. code-block :: <python>
             self.controlstate['xvar'] in ['Latitude','Longitude','Altitude']
         """
+        print(self.controlstate[coord+'var'],self.mr.nextrun.vars,self.controlstate[coord+'var'] in self.mr.nextrun.vars,self.is_multi('x'))
+
         if not self.is_multi(coord):
             return self.controlstate[coord+'var'] in self.mr.nextrun.vars
         else:
@@ -1170,10 +1172,10 @@ class UiHandler(object):
         #datatype in a sensible way
         #Check if it's a bool
         #First try to turn the unicode into a normal string
-        try:
-            val = val.encode('ascii','ignore')
-        except:
-            pass
+        # try:
+        #     val = val.encode('ascii','ignore')
+        # except:
+        #     pass
         val = val.strip() #Remove any leading or trailing whitespace
 
         #Make sure there's no spaces, parens, brackets or other nonsense
