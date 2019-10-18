@@ -497,6 +497,7 @@ class ModelRun(object):
                     self.log.debug("Generating %d %s points from %.3f to %.3f" % (self.vars.npts[var],var,self.vars.lims[var][0],self.vars.lims[var][1]))
             else:
                 if self.vars[var] is not None:
+                    print(self.shape,self.vars[var])
                     self.vars[var] = np.ones(self.shape)*self.vars[var]
                 else:
                     raise RuntimeError('Set %s to something first if you want to hold it constant.' % (var))
@@ -1220,7 +1221,7 @@ class PlotDataHandler(object):
 
                 for i in range(len(self.x)):
                     self.ax.plot(self.x[i],self.y,label=self.xname[i],*args,**kwargs) #should cycle through colors
-                    self.ax.hold(True)
+                    #self.ax.hold(True)
 
                     #Compute new bounds as incuding all bounds
                     xbnds[0] = xbnds[0] if xbnds[0]<self.xbounds[i][0] else self.xbounds[i][0]
@@ -1248,7 +1249,7 @@ class PlotDataHandler(object):
 
                 for i in range(len(self.y)):
                     self.ax.plot(self.x,self.y[i],label=self.yname[i],*args,**kwargs) #should cycle through colors
-                    self.ax.hold(True)
+                    #self.ax.hold(True)
                     #Compute new bounds as incuding all bounds
 
                     print(self.ybounds[i])
