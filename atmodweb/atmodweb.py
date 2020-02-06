@@ -1746,7 +1746,7 @@ if __name__ == '__main__':
          },
          '/docs': {
              'tools.staticdir.on': True,
-             'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc','build','html'),
+             'tools.staticdir.dir': os.path.join(os.path.abspath(webapp.rootdir),'doc','build'),
              'tools.expires.on'    : True,
              'tools.expires.secs'  : 3600
          },

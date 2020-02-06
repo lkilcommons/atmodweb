@@ -36,39 +36,7 @@ Variables Available for MSIS:
 Technical Notes on Input Variables
 ----------------------------------
 
-* UT, Local Time, and Longitude are used independently in the model and are not of equal importance for every situation. For the most physically realistic calculation these three variables should be consistent (STL=SEC/3600+GLONG/15). The Equation of Time departures from the above formula for apparent local time can be included if available but are of minor importance.
+* UT, Local Time, and Longitude are used independently in the model and are not of equal importance for every situation. For the most physically realistic calculation these three variables should be consistent (SLT=SEC/3600+GLONG/15). The Equation of Time departures from the above formula for apparent local time can be included if available but are of minor importance.
 
 * F107 and F107A values used to generate the model correspond to the 10.7 cm radio flux at the actual distance of the Earth from the Sun rather than the radio flux at 1 AU. The following site provides both classes of values: `NOAA NGDC/NCEI FTP <ftp://ftp.ngdc.noaa.gov/STP/SOLAR_DATA/SOLAR_RADIO/FLUX/>`_
 
-.. _iri:
-
-International Reference Ionosphere (IRI) 2011
-+++++++++++++++++++++++++++++++++++++++++++++
-
-.. epigraph::
-	The International Reference Ionosphere (IRI) is an international project sponsored by
-	the Committee on Space Research (COSPAR) and the International Union of Radio Science (URSI).
-	These organizations formed a Working Group (members list) in the late sixties to produce an
-	empirical standard model of the ionosphere, based on all available data sources (charter ).
-	Several steadily improved editions of the model have been released. For given location, time
-	and date, IRI provides monthly averages of the electron density, electron temperature, ion temperature,
-	and ion composition in the altitude range from 50 km to 2000 km. Additionally parameters given by IRI
-	include the Total Electron Content (TEC; a user can select the starting and ending height of the integral),
-	the occurrence probability for Spread-F and also the F1-region, and the equatorial vertical ion drift.
-
-	-- (from: `IRI webpage <http://iri.gsfc.nasa.gov/>`_)
-
-.. WARNING:: 
-	Not all variables in IRI are avaliable for all altitudes. 
-	
-	================  =================  ============
-	VARIABLE          LOWER (DAY/NIGHT)  UPPER       
-	================  =================  ============
-	ELECTRON DENSITY  60/80 KM           1000 KM       
-	TEMPERATURES      120 KM             2500/3000 KM  
-	ION DENSITIES     100 KM             1000 KM       
-	================  =================  ============
-	
-Variables Available in IRI:
----------------------------
-	* blah

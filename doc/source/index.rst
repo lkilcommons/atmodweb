@@ -6,12 +6,11 @@
 Welcome to the Documentation for AtModWeb
 =========================================
 
-The very creatively named AtModWeb is a Atmospheric Model Web Application. It gives users a way to run data-derived (emperical) models of the top-most layer of the atmosphere (`thermosphere <https://en.wikipedia.org/wiki/Thermosphere>`_ and `ionosphere <https://en.wikipedia.org/wiki/Ionosphere>`_). 
+The very creatively named AtModWeb is a Atmospheric Model Web Application. It gives users a way to run data-derived (emperical) models of the top-most layer of the atmosphere (`thermosphere <https://en.wikipedia.org/wiki/Thermosphere>`_ ). 
 
 The models currently included in AtModWeb:
 
 1. :ref:`msis`
-2. :ref:`iri`
 
 AtModWeb allows you to do two main things with the output of these models:
 
@@ -28,7 +27,6 @@ Contents:
    faq.rst
    models.rst
    for_developers.rst
-   deployment.rst
 
 Indices and tables
 ------------------
