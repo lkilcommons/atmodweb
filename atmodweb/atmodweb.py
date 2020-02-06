@@ -189,8 +189,8 @@ class ControlStateManager(object):
             'lat':40.0274,'lon':105.2519,'alt':200.,\
             'plottype':'map',\
             'descstr':'intial plot','gif_mode':False,\
-            'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50.,'xlog':False,'xmulti':False,'xunits':'deg','xdesc':'Longitude',\
-            'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50.,'ylog':False,'ymulti':False,'yunits':'deg','ydesc':'Geodetic Latitude',\
+            'xvar':'Longitude','xbounds':[-180.,180.],'xnpts':50,'xlog':False,'xmulti':False,'xunits':'deg','xdesc':'Longitude',\
+            'yvar':'Latitude','ybounds':[-90.,90.],'ynpts':50,'ylog':False,'ymulti':False,'yunits':'deg','ydesc':'Geodetic Latitude',\
             'zvar':'Temperature','zbounds':[0.,1000.],'zlog':False,'zmulti':False,'zunits':'K','zdesc':'Atmospheric Temperature',\
             'modelname':'msis','differencemode':False,'run_model_on_refresh':True,'controlstate_is_sane':None,
             'thisplot':None,'thiscaption':None,'mapproj':'moll',
@@ -626,8 +626,6 @@ class Synchronizer(object):
         .. code-block :: <python>
             self.controlstate['xvar'] in ['Latitude','Longitude','Altitude']
         """
-        print(self.controlstate[coord+'var'],self.mr.nextrun.vars,self.controlstate[coord+'var'] in self.mr.nextrun.vars,self.is_multi('x'))
-
         if not self.is_multi(coord):
             return self.controlstate[coord+'var'] in self.mr.nextrun.vars
         else:
