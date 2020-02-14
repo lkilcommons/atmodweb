@@ -4,7 +4,6 @@ This is a project of the University of [Colorado Space Environment Data Analysis
 
 This tool was inspired by the similar IDL tool developed at National Center for Atmospheric Research's High Altitude Observatory (NCAR HAO) in 2003 as part of the Center for Integrated Space Weather Modeling (CISM) summer school.
 
-_We're currently in early development. The application is working, but may have unexpected 'features'_
 
 ### About 
 
