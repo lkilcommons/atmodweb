@@ -1,4 +1,6 @@
 # AtModWeb
+[![Documentation Status](https://readthedocs.org/projects/atmodweb/badge/?version=latest)](https://atmodweb.readthedocs.io/en/latest/?badge=latest)
+
 ### _An web application for visually exploring (empirical) atmospheric models_
 This is a project of the University of [Colorado Space Environment Data Analysis Group (SEDA)](http://www.ccar.int.colorado.edu/seda), a part of the Colorado Center for Astrodynamics Research (CCAR), and Aerospace Engineering Sciences (AES).
 
