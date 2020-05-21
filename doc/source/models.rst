@@ -38,8 +38,7 @@ Technical Notes on Input Variables
 
 * UT, Local Time, and Longitude are used independently in the model and are not of equal importance for every situation. For the most physically realistic calculation these three variables should be consistent (SLT=SEC/3600+GLONG/15). The Equation of Time departures from the above formula for apparent local time can be included if available but are of minor importance.
 
-* F107 and F107A values used to generate the model correspond to the 10.7 cm radio flux at the actual distance of the Earth from the Sun rather than the radio flux at 1 AU. 
-The following site provides both classes of values: `NOAA NGDC/NCEI FTP <ftp://ftp.ngdc.noaa.gov/STP/SOLAR_DATA/SOLAR_RADIO/FLUX/>`_
+* F107 and F107A values used to generate the model correspond to the 10.7 cm radio flux at the actual distance of the Earth from the Sun rather than the radio flux at 1 AU. The following site provides both classes of values: `NOAA NGDC/NCEI FTP <ftp://ftp.ngdc.noaa.gov/STP/SOLAR_DATA/SOLAR_RADIO/FLUX/>`_
 
 References
 ----------
