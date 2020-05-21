@@ -44,6 +44,6 @@ The following site provides both classes of values: `NOAA NGDC/NCEI FTP <ftp://f
 References
 ----------
 
-Picone, J. M., Hedin, A. E., Drob, D. P., and Aikin, A. C., NRLMSISE‐00 empirical model of the atmosphere: Statistical comparisons and scientific issues, J. Geophys. Res., 107( A12), 1468, `doi:10.1029/2002JA009430 <https://doi.org/10.1029/2002JA009430>>`_ , 2002
+Picone, J. M., Hedin, A. E., Drob, D. P., and Aikin, A. C., NRLMSISE‐00 empirical model of the atmosphere: Statistical comparisons and scientific issues, J. Geophys. Res., 107( A12), 1468, `doi:10.1029/2002JA009430 <https://doi.org/10.1029/2002JA009430>`_ , 2002
 
 
