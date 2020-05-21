@@ -6,7 +6,7 @@
 Welcome to the Documentation for AtModWeb
 =========================================
 
-The very creatively named AtModWeb is a Atmospheric Model Web Application. It gives users a way to run data-derived (emperical) models of the top-most layer of the atmosphere (`thermosphere <https://en.wikipedia.org/wiki/Thermosphere>`_ ). 
+The very creatively named AtModWeb is an Atmospheric Model Web Application. It gives users a way to run data-derived (empirical) models of the neutral atmosphere with strong emphasis on the top-most layer of the atmosphere (the `thermosphere <https://en.wikipedia.org/wiki/Thermosphere>`_ ). 
 
 The models currently included in AtModWeb:
 

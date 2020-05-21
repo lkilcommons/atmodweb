@@ -1294,7 +1294,7 @@ class FakeCanvas(object):
 
             mpl.artist.setp(self.ax.get_xmajorticklabels(),size=fs,rotation=30)
             mpl.artist.setp(self.ax.get_ymajorticklabels(),size=fs)
-            mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
+            #mpl.artist.setp(self.atmo.syncher.pdh.cb.ax.get_xmajorticklabels(),size=fs,rotation=45)
 
             #Label is a text object
             self.ax.xaxis.label.set_fontsize(fs)

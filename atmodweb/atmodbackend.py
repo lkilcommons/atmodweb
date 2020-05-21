@@ -958,7 +958,7 @@ class PlotDataHandler(object):
         self.supported_projections={'mill':'Miller Cylindrical','moll':'Mollweide','ortho':'Orthographic'}
         self.plottypes = dict()
         self.plottypes['line'] = {'gridxy':False,'overplot_ready':True,'x_allowed':['all'],'y_allowed':['all'],'z_allowed':['none']}
-        #self.plottypes['pcolor'] = {'gridxy':True,'overplot_ready':False,'x_allowed':['position'],'y_allowed':['position'],'z_allowed':['notposition']}
+        self.plottypes['pcolor'] = {'gridxy':True,'overplot_ready':False,'x_allowed':['position'],'y_allowed':['position'],'z_allowed':['notposition']}
         self.plottypes['map'] = {'gridxy':True,'overplot_ready':False,'x_allowed':['Longitude'],'y_allowed':['Latitude'],'z_allowed':['notposition']}
         if plottype not in self.plottypes:
             raise ValueError('Invalid plottype %s! Choose from %s' % (plottype,str(self.plottypes.keys())))
